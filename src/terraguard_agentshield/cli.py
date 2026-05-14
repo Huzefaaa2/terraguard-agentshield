@@ -9,11 +9,8 @@ from rich.console import Console
 from rich.json import JSON
 
 from terraguard_agentshield.agent import AgentSessionManager
-from terraguard_agentshield.integrations import (
-    CommandInterceptor,
-    GitHubPRAttestationExporter,
-    WebhookExporter,
-)
+from terraguard_agentshield.audit import AuditAction, SessionAudit
+from terraguard_agentshield.integrations import CommandInterceptor, GitHubPRAttestationExporter
 from terraguard_agentshield.policy_registry import PolicyRegistry
 from terraguard_agentshield.runtime import RuntimeGuard
 
@@ -42,11 +39,9 @@ def start_agent(
         repo=repo, tool=tool, policy_pack=policy_pack, output_dir=output
     )
     session = manager.start_session()
-    console.print(f"[green]✓[/green] Started session: {session.session_id}")
+    console.print(f"[green]OK[/green] Started session: {session.session_id}")
     console.print(f"[dim]Audit saved at: {session.audit_path}[/dim]")
-    console.print(
-        f"[dim]Policy pack: {session.policy_pack or 'ai-agent-baseline'}[/dim]"
-    )
+    console.print(f"[dim]Policy pack: {session.policy_pack or 'ai-agent-baseline'}[/dim]")
 
 
 @agent_app.command("exec")
@@ -68,14 +63,83 @@ def exec_command(
     result = interceptor.execute(command)
 
     if result.success:
-        console.print(f"[green]✓[/green] Command executed successfully")
+        console.print("[green]OK[/green] Command executed successfully")
         if result.output:
             console.print(result.output)
     else:
-        console.print(f"[red]✗[/red] {result.error}")
+        console.print(f"[red]ERROR[/red] {result.error}")
         raise typer.Exit(code=1)
 
     session.audit.write(output)
+
+
+@agent_app.command("check-file")
+def check_file(
+    path: Annotated[Path, typer.Argument(help="File path the AI agent wants to access.")],
+    mode: Annotated[str, typer.Option(help="Access mode: read or write.")] = "read",
+    tool: Annotated[str, typer.Option(help="AI tool identifier.")] = "claude-code",
+    repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
+    policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = None,
+    output: Annotated[Path, typer.Option(help="Audit output directory.")] = Path(".terraguard"),
+) -> None:
+    """Evaluate and audit an AI agent file access request."""
+    manager = AgentSessionManager(
+        repo=repo, tool=tool, policy_pack=policy_pack, output_dir=output
+    )
+    session = manager.start_session()
+    guard = RuntimeGuard(policy_pack=session.policy_pack)
+    decision = guard.evaluate_file_access(path, mode)
+    session.audit.add_action(
+        AuditAction(
+            type=f"{mode.lower()}_file",
+            target=str(path),
+            decision=decision.decision,
+            reason=decision.reason,
+        )
+    )
+    session.audit.write(output)
+
+    console.print(f"[bold]{decision.decision}[/bold]: {decision.reason or 'policy matched'}")
+    console.print(f"[dim]Audit saved at: {session.audit_path}[/dim]")
+    if decision.decision == "block":
+        raise typer.Exit(code=1)
+    if decision.decision == "require_approval":
+        raise typer.Exit(code=2)
+
+
+@agent_app.command("check-mcp")
+def check_mcp(
+    server_id: Annotated[str, typer.Argument(help="MCP server identifier.")],
+    capability: Annotated[str | None, typer.Option(help="Requested MCP capability.")] = None,
+    tool: Annotated[str, typer.Option(help="AI tool identifier.")] = "claude-code",
+    repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
+    policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = "mcp-server-governance",
+    output: Annotated[Path, typer.Option(help="Audit output directory.")] = Path(".terraguard"),
+) -> None:
+    """Evaluate and audit an MCP server connection request."""
+    manager = AgentSessionManager(
+        repo=repo, tool=tool, policy_pack=policy_pack, output_dir=output
+    )
+    session = manager.start_session()
+    guard = RuntimeGuard(policy_pack=session.policy_pack)
+    decision = guard.evaluate_mcp_server(server_id, capability=capability)
+    session.audit.add_action(
+        AuditAction(
+            type="mcp_connect",
+            target=server_id,
+            decision=decision.decision,
+            reason=decision.reason,
+            metadata={"capability": capability},
+        )
+    )
+    session.audit.write(output)
+
+    console.print(f"[bold]{decision.decision}[/bold]: {decision.reason or 'policy matched'}")
+    console.print(f"[dim]Audit saved at: {session.audit_path}[/dim]")
+    if decision.decision == "block":
+        raise typer.Exit(code=1)
+    if decision.decision == "require_approval":
+        raise typer.Exit(code=2)
 
 
 @agent_app.command("attest")
@@ -87,30 +151,23 @@ def generate_attestation(
     """Generate PR attestation from audit session."""
     audit_path = audit_dir / f"session-{session_id}.json"
     if not audit_path.exists():
-        console.print(f"[red]✗[/red] Audit file not found: {audit_path}")
+        console.print(f"[red]ERROR[/red] Audit file not found: {audit_path}")
         raise typer.Exit(code=1)
 
     audit_data = json.loads(audit_path.read_text(encoding="utf-8"))
 
     if format == "markdown":
-        from terraguard_agentshield.audit import SessionAudit
-
-        audit = SessionAudit(**audit_data)
-        from terraguard_agentshield.integrations import GitHubPRAttestationExporter
-
+        audit = SessionAudit.from_dict(audit_data)
         output = GitHubPRAttestationExporter.export_comment(audit)
         console.print(output)
     elif format == "json":
         console.print(json.dumps(audit_data, indent=2))
     elif format == "artifact":
-        from terraguard_agentshield.audit import SessionAudit
-        from terraguard_agentshield.integrations import GitHubPRAttestationExporter
-
-        audit = SessionAudit(**audit_data)
+        audit = SessionAudit.from_dict(audit_data)
         path = GitHubPRAttestationExporter.save_artifact(audit, audit_dir)
-        console.print(f"[green]✓[/green] Artifact saved: {path}")
+        console.print(f"[green]OK[/green] Artifact saved: {path}")
     else:
-        console.print(f"[red]✗[/red] Unknown format: {format}")
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
         raise typer.Exit(code=1)
 
 

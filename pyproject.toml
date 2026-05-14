@@ -9,11 +9,10 @@ description = "AI agent runtime governance for regulated engineering."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Huzefa Husain" }]
-license = { text = "BUSL-1.1" }
+license = "BUSL-1.1"
 keywords = ["ai", "governance", "runtime", "policy", "agent", "security"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: Other/Proprietary License",
   "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -32,6 +31,14 @@ dev = [
 [project.scripts]
 terraguard-agentshield = "terraguard_agentshield.cli:main"
 
+[project.urls]
+"Bug Tracker" = "https://github.com/Huzefaaa2/terraguard-agentshield/issues"
+"Documentation" = "https://github.com/Huzefaaa2/terraguard-agentshield/tree/main/docs"
+"Source Code" = "https://github.com/Huzefaaa2/terraguard-agentshield"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 include-package-data = true
+
+[tool.setuptools.package-data]
+terraguard_agentshield = ["py.typed", "policies/*/policy.yaml"]

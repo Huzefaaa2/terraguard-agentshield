@@ -1,17 +1,14 @@
 from pathlib import Path
 
-from terraguard_agentshield.audit import AuditAction, SessionAudit, create_attestation_markdown
+from terraguard_agentshield.audit import AuditAction, SessionAudit
 from terraguard_agentshield.integrations import (
     CommandInterceptor,
     GitHubPRAttestationExporter,
 )
-from terraguard_agentshield.policy_registry import PolicyRegistry
 from terraguard_agentshield.runtime import RuntimeGuard
 
 
 def test_command_interceptor_blocks_terraform_apply() -> None:
-    root = Path(__file__).resolve().parents[1] / "policies"
-    registry = PolicyRegistry(root=root)
     guard = RuntimeGuard(policy_pack="ai-agent-baseline")
 
     session = SessionAudit(session_id="test-001", tool="claude-code", repo=Path("."))
@@ -55,3 +52,26 @@ def test_attestation_artifact_export(tmp_path: Path) -> None:
     content = json.loads(artifact_path.read_text(encoding="utf-8"))
     assert content["session_id"] == "test-002"
     assert len(content["actions"]) == 1
+
+
+def test_session_audit_round_trip_from_json_payload() -> None:
+    session = SessionAudit(
+        session_id="test-003",
+        tool="codex",
+        repo=Path("/repo"),
+        policy_pack="banking-regulated-ai",
+    )
+    session.add_action(
+        AuditAction(
+            type="mcp_connect",
+            target="github-enterprise",
+            decision="allow",
+            metadata={"capability": "read_repo"},
+        )
+    )
+
+    parsed = SessionAudit.from_dict(session.to_dict())
+    assert parsed.session_id == "test-003"
+    assert parsed.repo == Path("/repo")
+    assert parsed.policy_pack == "banking-regulated-ai"
+    assert parsed.actions[0].metadata["capability"] == "read_repo"

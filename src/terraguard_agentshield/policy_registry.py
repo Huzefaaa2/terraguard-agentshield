@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
+from importlib import resources
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +36,15 @@ class PolicyPack:
 
 class PolicyRegistry:
     def __init__(self, root: Path | None = None) -> None:
-        self.root = (root or POLICY_DIR).resolve()
+        self.root = self._resolve_root(root)
+
+    @staticmethod
+    def _resolve_root(root: Path | None = None) -> Path | Traversable:
+        if root is not None:
+            return root.resolve()
+        if POLICY_DIR.exists():
+            return POLICY_DIR
+        return resources.files("terraguard_agentshield").joinpath("policies")
 
     def list_policy_packs(self) -> list[dict[str, Any]]:
         packs = []
@@ -50,7 +59,7 @@ class PolicyRegistry:
         return packs
 
     def get_policy_pack(self, pack_id: str) -> dict[str, Any]:
-        pack_dir = self.root / pack_id
+        pack_dir = self.root.joinpath(pack_id)
         if not pack_dir.exists() or not pack_dir.is_dir():
             raise PolicyRegistryError(f"Policy pack '{pack_id}' not found.")
         metadata = self._load_metadata(pack_dir)
@@ -58,8 +67,8 @@ class PolicyRegistry:
             raise PolicyRegistryError(f"Policy pack '{pack_id}' is invalid.")
         return metadata
 
-    def _load_metadata(self, pack_dir: Path) -> dict[str, Any] | None:
-        policy_path = pack_dir / "policy.yaml"
+    def _load_metadata(self, pack_dir: Path | Traversable) -> dict[str, Any] | None:
+        policy_path = pack_dir.joinpath("policy.yaml")
         if not policy_path.exists():
             return None
         with policy_path.open("r", encoding="utf-8") as handle:
@@ -83,6 +92,8 @@ class PolicyRegistry:
         return policy
 
     def save_policy(self, pack_id: str, content: dict[str, Any]) -> None:
+        if not isinstance(self.root, Path):
+            raise PolicyRegistryError("Cannot save policies into packaged read-only policy data.")
         pack_dir = self.root / pack_id
         pack_dir.mkdir(parents=True, exist_ok=True)
         policy_path = pack_dir / "policy.yaml"

@@ -1,0 +1,45 @@
+# Architecture
+
+![AgentShield overview](https://raw.githubusercontent.com/Huzefaaa2/terraguard-agentshield/main/docs/assets/agentshield-agent-firewall.svg)
+
+## Runtime Flow
+
+```mermaid
+sequenceDiagram
+    participant Agent as AI Coding Agent
+    participant Adapter as AgentShield CLI / Hook Adapter
+    participant Guard as RuntimeGuard
+    participant Policy as Policy Registry
+    participant Audit as Session Audit
+    participant Env as Repo / Shell / Git / MCP
+
+    Agent->>Adapter: request action
+    Adapter->>Guard: normalize action
+    Guard->>Policy: load policy pack
+    Policy-->>Guard: policy rules
+    Guard-->>Adapter: allow / block / require approval
+    Adapter->>Audit: record decision
+    alt allow
+        Adapter->>Env: execute action
+    else block
+        Adapter-->>Agent: deny with reason
+    else require approval
+        Adapter-->>Agent: pause for human review
+    end
+```
+
+## Components
+
+| Component | Responsibility |
+| --- | --- |
+| CLI / hook adapter | Normalizes agent actions into policy checks |
+| RuntimeGuard | Evaluates file, command, Git, and MCP decisions |
+| Policy Registry | Loads YAML policy packs |
+| Audit Recorder | Writes JSON evidence and markdown attestation |
+| Policy Packs | Define enterprise controls |
+
+## Decisions
+
+- `allow`: action can proceed.
+- `block`: action must not proceed.
+- `require_approval`: human approval is required before proceeding.

@@ -52,7 +52,7 @@ Be respectful, inclusive, and professional. We follow the Contributor Covenant.
 
 - Add new policy packs to `policies/`
 - Include metadata (id, title, description, version)
-- Test policies with `terraguard agent exec`
+- Test policies with `terraguard-agentshield agent exec`
 - Document use cases and threat coverage
 
 ## Reporting issues

@@ -1,351 +1,191 @@
-# PyPI Distribution & GitHub Publishing Guide
+# PyPI Publishing Guide
 
-This guide walks through publishing TerraGuard AgentShield to PyPI and GitHub.
+This guide describes how to publish TerraGuard AgentShield to PyPI and create a GitHub release.
 
 ## Prerequisites
 
-1. **GitHub account** with repository created
-2. **PyPI account** (https://pypi.org/account/register/)
-3. **PyPI API token** for authentication
-4. Local git configuration (already done)
+1. GitHub repository access.
+2. PyPI account.
+3. PyPI API token.
+4. Local Python 3.10+ environment.
 
----
-
-## Step 1: Push to GitHub
-
-### 1a. Create GitHub repository
-
-1. Go to https://github.com/new
-2. Create repository: `terraguard-agentshield`
-3. Choose:
-   - ✓ Public
-   - ✓ Initialize with nothing (we have our own .git)
-4. Copy the HTTPS or SSH URL
-
-### 1b. Add GitHub remote and push
+## 1. Build Locally
 
 ```bash
-# Add remote (replace with your GitHub URL)
-git remote add origin https://github.com/YOUR_USERNAME/terraguard-agentshield.git
-
-# Push to GitHub
-git push -u origin main
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+pip install build twine
 ```
 
-### 1c. Set up GitHub branch protection (optional)
-
-In GitHub Settings → Branches:
-1. Add branch protection rule for `main`
-2. ✓ Require status checks to pass (test.yml)
-3. ✓ Require code review before merge (1 reviewer)
-4. ✓ Dismiss stale reviews
-5. ✓ Require branches be up to date
-
----
-
-## Step 2: Build distribution package
-
-### 2a. Install build tools
+Run verification:
 
 ```bash
-pip install --upgrade build twine
+ruff check .
+pytest -q
 ```
 
-### 2b. Build package locally
+Build:
 
 ```bash
-cd /Users/huzefahusain/Projects/terraguard-agentshield
+rm -rf dist build *.egg-info
 python -m build
-```
-
-This creates:
-- `dist/terraguard_agentshield-0.1.0-py3-none-any.whl` (wheel)
-- `dist/terraguard_agentshield-0.1.0.tar.gz` (source)
-
-### 2c. Validate with twine
-
-```bash
 twine check dist/*
 ```
 
-Should return:
+Expected artifacts:
+
+- `dist/terraguard_agentshield-<version>-py3-none-any.whl`
+- `dist/terraguard_agentshield-<version>.tar.gz`
+
+## 2. Test the Built Wheel
+
+```bash
+python -m venv /tmp/agentshield-wheel-test
+source /tmp/agentshield-wheel-test/bin/activate
+pip install dist/terraguard_agentshield-*.whl
+terraguard-agentshield version
+terraguard-agentshield policy list
 ```
-Checking distribution dist/terraguard_agentshield-0.1.0-py3-none-any.whl: Passed
-Checking distribution dist/terraguard_agentshield-0.1.0.tar.gz: Passed
-```
 
----
+The package should include built-in policy packs. Verify `policy list` shows:
 
-## Step 3: Test PyPI (recommended first)
+- `ai-agent-baseline`
+- `banking-regulated-ai`
+- `terraform-ai-guardrails`
+- `mcp-server-governance`
 
-### 3a. Upload to TestPyPI
+## 3. Upload to TestPyPI
 
 ```bash
 twine upload --repository testpypi dist/*
 ```
 
-Enter username: `__token__`
-Enter password: (your TestPyPI API token)
+Use:
 
-### 3b. Install from TestPyPI
+- Username: `__token__`
+- Password: your TestPyPI API token
+
+Install from TestPyPI in a clean environment:
 
 ```bash
+python -m venv /tmp/agentshield-testpypi
+source /tmp/agentshield-testpypi/bin/activate
 pip install --index-url https://test.pypi.org/simple/ terraguard-agentshield
-```
-
-### 3c. Test the installation
-
-```bash
-terraguard-agentshield --version
+terraguard-agentshield version
 terraguard-agentshield policy list
 ```
 
----
-
-## Step 4: Publish to PyPI
-
-### 4a. Upload to production PyPI
+## 4. Publish to PyPI
 
 ```bash
 twine upload dist/*
 ```
 
-Enter username: `__token__`
-Enter password: (your PyPI API token from https://pypi.org/manage/account/tokens/)
+Use:
 
-### 4b. Install from PyPI
+- Username: `__token__`
+- Password: your PyPI API token
+
+Verify:
+
+```bash
+python -m venv /tmp/agentshield-pypi
+source /tmp/agentshield-pypi/bin/activate
+pip install terraguard-agentshield
+terraguard-agentshield version
+terraguard-agentshield policy list
+```
+
+## 5. Create GitHub Release
+
+Create and push a tag:
+
+```bash
+git tag -a v0.1.0 -m "Release TerraGuard AgentShield v0.1.0"
+git push origin v0.1.0
+```
+
+Release title:
+
+```text
+TerraGuard AgentShield v0.1.0 - Agent Firewall Foundation
+```
+
+Release summary:
+
+TerraGuard AgentShield v0.1.0 introduces the agent-firewall foundation for runtime governance of AI coding agents in regulated engineering environments.
+
+Implemented:
+
+- YAML policy packs
+- File access decisions
+- Command allow/block/approval decisions
+- MCP server and capability decisions
+- Protected branch Git decision model
+- JSON session audit
+- PR-ready markdown attestation
+- CLI workflows
+- README, architecture, C4, threat model, roadmap, and wiki source docs
+
+Install:
 
 ```bash
 pip install terraguard-agentshield
 ```
 
-### 4c. Verify installation
+Verify:
 
 ```bash
-terraguard-agentshield --version
-# Output: terraguard-agentshield, version 0.1.0
+terraguard-agentshield version
+terraguard-agentshield policy list
 ```
 
----
+## 6. GitHub Repository Settings
 
-## Step 5: Create GitHub Release
+Recommended branch protection for `main`:
 
-### 5a. Create tag
+- Require pull request before merging.
+- Require one independent reviewer.
+- Require status checks.
+- Require branches to be up to date.
+- Restrict direct pushes.
+
+Required repository secrets:
+
+- `PYPI_API_TOKEN`
+
+## 7. Troubleshooting
+
+### 401 Unauthorized
+
+Verify the PyPI token and ensure it belongs to the target project or account.
+
+### File Already Exists
+
+PyPI does not allow replacing published files. Increment the version and rebuild.
+
+### Policies Missing After Install
+
+Check:
 
 ```bash
-git tag -a v0.1.0 -m "TerraGuard AgentShield MVP v0.1.0 - Initial release
-
-Features:
-- Core policy registry with YAML governance
-- Runtime guard for file and command access control
-- Session management and audit recording
-- GitHub PR attestation generation
-- 4 production policy packs
-- Comprehensive documentation
-- Full test suite (8/8 passing)
-- GitHub Actions CI/CD workflows"
-
-git push origin v0.1.0
-```
-
-### 5b. Create release on GitHub
-
-1. Go to https://github.com/YOUR_USERNAME/terraguard-agentshield/releases
-2. Click "Draft a new release"
-3. Select tag: `v0.1.0`
-4. Title: `TerraGuard AgentShield v0.1.0 - MVP Release`
-5. Description:
-   ```markdown
-   # TerraGuard AgentShield v0.1.0
-
-   Initial MVP release of runtime governance for AI coding agents.
-
-   ## Features
-   - ✓ Policy-as-code (YAML) with 4 baseline packs
-   - ✓ Runtime file and command access control
-   - ✓ Session management with audit trails
-   - ✓ GitHub PR attestation generation
-   - ✓ Webhook export for SIEM (Splunk, Datadog, Sentinel)
-   - ✓ Full test suite (8/8 passing)
-   - ✓ Comprehensive documentation
-
-   ## Installation
-   ```bash
-   pip install terraguard-agentshield
-   ```
-
-   ## Quick Start
-   ```bash
-   # Start a governed session
-   terraguard-agentshield agent start \
-     --tool claude-code \
-     --repo . \
-     --policy-pack banking-regulated-ai
-
-   # Execute command under governance
-   terraguard-agentshield agent exec "terraform plan"
-
-   # List policies
-   terraguard-agentshield policy list
-   ```
-
-   ## Documentation
-   - [Vision](docs/vision.md)
-   - [Architecture](docs/architecture.md)
-   - [Policy Authoring](docs/policy-authoring.md)
-   - [Implementation Guide](docs/implementation-guide.md)
-   - [5-Year Roadmap](docs/roadmap.md)
-
-   See [README.md](README.md) for complete documentation.
-
-   ## License
-   BUSL-1.1 (Business Source License with 4-year change deadline)
-   ```
-6. ✓ Set as latest release
-7. Click "Publish release"
-
----
-
-## Step 6: Announce publicly
-
-### 6a. Social media
-
-Post on:
-- LinkedIn: Feature announcement, installation instructions
-- Twitter/X: Brief announcement with link to release
-- Reddit (r/devops, r/python): Community discussion
-
-### 6b. Notify users
-
-- Email to waitlist (if any)
-- Post in relevant Slack communities
-- Create discussion in GitHub Discussions
-
----
-
-## Continuous update process
-
-### For future versions
-
-1. **Update version** in `pyproject.toml` and `setup.py`:
-   ```
-   version = "0.2.0"
-   ```
-
-2. **Update changelog** in `RELEASE_NOTES.md`:
-   ```markdown
-   ## v0.2.0 (Date)
-   - Feature X
-   - Feature Y
-   - Bug fix Z
-   ```
-
-3. **Commit changes**:
-   ```bash
-   git add pyproject.toml setup.py RELEASE_NOTES.md
-   git commit -m "Release v0.2.0"
-   ```
-
-4. **Build and test**:
-   ```bash
-   python -m build
-   twine check dist/*
-   ```
-
-5. **Publish**:
-   ```bash
-   twine upload dist/*
-   ```
-
-6. **Tag and release**:
-   ```bash
-   git tag -a v0.2.0 -m "Release v0.2.0"
-   git push origin main --tags
-   ```
-
-7. **GitHub Release**: Create release on GitHub (as above)
-
----
-
-## Troubleshooting
-
-### Issue: "401 Unauthorized" when uploading
-
-**Solution**: Verify your PyPI API token
-```bash
-# Check stored credentials
-cat ~/.pypirc
-# Or re-authenticate
-twine upload --skip-existing dist/*
-```
-
-### Issue: "File already exists on server"
-
-**Solution**: Use `--skip-existing` flag
-```bash
-twine upload --skip-existing dist/*
-```
-
-### Issue: Test PyPI upload works but production fails
-
-**Solution**: Ensure you're using the correct credentials
-```bash
-# Use explicit token
-twine upload -u __token__ -p "pypi-your-token-here" dist/*
-```
-
-### Issue: Package can't be imported after install
-
-**Solution**: Rebuild and check MANIFEST.in
-```bash
-python -m build --clean
+python -m build
 twine check dist/*
+terraguard-agentshield policy list
 ```
 
----
+The `pyproject.toml` package-data entry and `MANIFEST.in` should include `src/terraguard_agentshield/policies/*/policy.yaml`.
 
-## Security best practices
+## 8. Future Release Checklist
 
-1. **Never commit API tokens** to git
-2. **Use environment variables** for credentials:
-   ```bash
-   export TWINE_USERNAME="__token__"
-   export TWINE_PASSWORD="pypi-your-token"
-   twine upload dist/*
-   ```
-
-3. **Create repository-scoped tokens** on PyPI:
-   - Go to PyPI → Account → API tokens
-   - Create new token with `terraguard-agentshield` scope only
-
-4. **Rotate tokens regularly** (quarterly)
-
-5. **Sign releases with GPG** (future):
-   ```bash
-   git tag -s -a v0.1.0 -m "Release v0.1.0"
-   ```
-
----
-
-## Success checklist
-
-- [ ] GitHub repository created and pushed
-- [ ] PyPI package uploaded (TestPyPI first)
-- [ ] Installation verified: `pip install terraguard-agentshield`
-- [ ] CLI working: `terraguard-agentshield --version`
-- [ ] GitHub release created with proper description
-- [ ] Documentation linked in GitHub repo
-- [ ] Public announcement made
-- [ ] Repository starred and watched by team
-
----
-
-## Next steps
-
-After successful release:
-1. Monitor GitHub issues and discussions
-2. Gather customer feedback
-3. Update policies based on real-world usage
-4. Plan Phase 2: MCP governance and advanced features
-5. Begin work on web UI for policy management
-
+1. Update `pyproject.toml` and `setup.py` version.
+2. Update `RELEASE_NOTES.md`.
+3. Run `ruff check .`.
+4. Run `pytest -q`.
+5. Build with `python -m build`.
+6. Run `twine check dist/*`.
+7. Publish to TestPyPI.
+8. Publish to PyPI.
+9. Create GitHub tag and release.
+10. Monitor GitHub Actions and PyPI installation.

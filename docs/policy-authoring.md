@@ -66,16 +66,21 @@ commands:
 
 ### Policy pack inheritance
 
-You can combine multiple policy packs. Load them in order:
+Policy pack inheritance is planned for a future release. In the current MVP, create one composed policy pack per environment or team.
 
-```bash
-terraguard agent start \
-  --policy-pack ai-agent-baseline \
-  --policy-pack banking-regulated-ai \
-  --policy-pack my-org-custom
+Recommended structure:
+
+```text
+policies/
+  platform-banking-ai/
+    policy.yaml
+  payments-ai/
+    policy.yaml
+  developer-sandbox-ai/
+    policy.yaml
 ```
 
-Policies are evaluated in order; first match wins.
+Within a policy pack, decision precedence is block, then require approval, then allow.
 
 ## Best practices
 
@@ -102,7 +107,7 @@ Policies are evaluated in order; first match wins.
 4. **Test policies locally**
    ```bash
    # Test that a command is blocked
-   terraguard agent exec "terraform apply" \
+   terraguard-agentshield agent exec "terraform apply" \
      --policy-pack my-custom-policy
    ```
 
@@ -157,7 +162,9 @@ Create separate packs:
 # dev.yaml
 commands:
   allow:
-    - "*"  # Allow most commands
+    - "terraform plan*"
+    - "pytest*"
+    - "npm test*"
 
 # prod.yaml
 commands:
@@ -174,8 +181,14 @@ Validate your policy YAML:
 
 ```bash
 # Parse and list rules
-terraguard policy describe my-custom-policy
+terraguard-agentshield policy describe my-custom-policy
 
 # Test against a command
-terraguard agent exec "my-test-command" --policy-pack my-custom-policy
+terraguard-agentshield agent exec "my-test-command" --policy-pack my-custom-policy
+
+# Test file access
+terraguard-agentshield agent check-file .env --mode read --policy-pack my-custom-policy
+
+# Test MCP access
+terraguard-agentshield agent check-mcp github-enterprise --capability read_repo
 ```

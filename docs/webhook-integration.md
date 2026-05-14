@@ -1,90 +1,81 @@
-# Webhook Integration
+# Webhook and SIEM Integration
 
-TerraGuard AgentShield can export audit evidence and attestations to webhook endpoints for integration with SOC, GRC, and change management systems.
+Webhook and native SIEM exports are part of the enterprise evidence roadmap. The current MVP writes local JSON session evidence and PR-ready markdown attestation. This page defines the planned integration contract so enterprise pilots can design receivers without overloading the current CLI.
 
-## Overview
+## Current Evidence Outputs
 
-Webhooks allow you to:
-- Send audit evidence to SIEM or logging systems
-- Notify approval systems of high-risk agent actions
-- Trigger downstream compliance workflows
-- Archive attestation evidence for audits
-
-## Configuration
-
-Set the webhook URL via environment variable:
+Generate JSON evidence:
 
 ```bash
-export TERRAGUARD_WEBHOOK_URL=https://your-webhook-endpoint/events
+terraguard-agentshield agent attest <session-id> \
+  --audit-dir .terraguard/audit \
+  --format json
 ```
 
-Or pass it directly to the CLI:
+Generate markdown attestation:
 
 ```bash
-terraguard agent exec "terraform plan" \
-  --webhook-url https://your-webhook-endpoint/events
+terraguard-agentshield agent attest <session-id> \
+  --audit-dir .terraguard/audit \
+  --format markdown
 ```
 
-## Event payload
+## Planned CLI
 
-All events are sent as JSON POST requests with this structure:
+Planned command:
+
+```bash
+terraguard-agentshield evidence send-webhook <session-id> \
+  --audit-dir .terraguard/audit \
+  --url https://your-webhook-endpoint/events
+```
+
+## Planned Event Payload
 
 ```json
 {
   "session_id": "abc123def456",
   "tool": "claude-code",
   "repo": "/path/to/repo",
+  "policy_pack": "banking-regulated-ai",
   "started_at": "2026-05-14T10:30:00Z",
   "actions": [
     {
       "type": "execute_command",
       "target": "terraform apply",
       "decision": "block",
-      "reason": "Matched blocked command policy: terraform apply*"
+      "reason": "Matched blocked command policy: terraform apply*",
+      "metadata": {}
     }
   ]
 }
 ```
 
-## Webhook receiver requirements
+## Receiver Requirements
 
-Your webhook receiver should:
-- Accept POST requests with JSON body
-- Return HTTP 200, 201, or 204 on success
-- Handle requests within 10 seconds
-- Log or process the evidence asynchronously
+Webhook receivers should:
 
-## Example SIEM integration
+- Accept JSON POST requests.
+- Return HTTP 200, 201, or 204 on success.
+- Handle duplicate evidence idempotently.
+- Store the raw payload for audit traceability.
+- Map decisions to internal control IDs where possible.
 
-### Splunk
+## Example Splunk Mapping
 
-```python
-def splunk_webhook(request):
-    event = request.json
-    # Send to Splunk HEC
-    hec_client.send(
-        event=event,
-        source="terraguard-agentshield",
-        sourcetype="terraguard:audit"
-    )
-    return {"status": "ok"}, 200
-```
+| AgentShield field | Splunk field |
+| --- | --- |
+| `session_id` | `session_id` |
+| `tool` | `ai_agent` |
+| `policy_pack` | `policy_pack` |
+| `actions[].decision` | `decision` |
+| `actions[].target` | `target` |
 
-### Datadog
+## Roadmap
 
-```python
-def datadog_webhook(request):
-    event = request.json
-    statsd.increment("terraguard.agent.actions", tags=[
-        f"tool:{event['tool']}",
-        f"session:{event['session_id']}"
-    ])
-    return {"status": "ok"}, 200
-```
-
-## Error handling
-
-If a webhook request fails:
-- TerraGuard logs the failure but does not block the agent session
-- The local audit JSON is always persisted to `.terraguard/`
-- Consider implementing retry logic in your webhook handler
+- Webhook sender CLI
+- Retry and timeout controls
+- HMAC request signing
+- Splunk HEC example
+- Microsoft Sentinel example
+- ServiceNow/Jira change evidence mapping

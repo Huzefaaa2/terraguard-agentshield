@@ -72,7 +72,7 @@ Examples:
 - `commands.block` prevents known-dangerous patterns
 - `commands.require_approval` gates unfamiliar commands
 - Session audit logs all executed commands
-- Webhook export notifies security teams
+- Webhook/SIEM export is planned for enterprise evidence workflows
 
 ---
 
@@ -98,7 +98,7 @@ Examples:
 **Mitigation**:
 - Session audit JSON generated automatically
 - GitHub PR attestation comment surfaces decisions
-- Webhook export sends evidence to SIEM
+- SIEM/GRC export is planned as a future evidence channel
 - Audit trail is immutable and timestamped
 
 ---
@@ -150,7 +150,7 @@ TerraGuard AgentShield implements a defense-in-depth strategy:
 
 1. **Configuration layer**: Policy packs define what is allowed/blocked
 2. **Runtime layer**: Guards intercept file access, commands, Git actions
-3. **Audit layer**: Session audit records all decisions
+3. **Audit layer**: Session audit records governed decisions
 4. **Evidence layer**: PR attestation and webhook export provide proof
 5. **Review layer**: Human approval gates high-risk changes
 

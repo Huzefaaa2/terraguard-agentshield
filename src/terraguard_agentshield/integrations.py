@@ -4,7 +4,6 @@ import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from terraguard_agentshield.audit import SessionAudit, create_attestation_markdown
 from terraguard_agentshield.runtime import RuntimeGuard

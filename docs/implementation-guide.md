@@ -1,33 +1,27 @@
-# Implementation Guide: AI Agent Governance for Enterprises
+# Implementation Guide
 
-This guide provides step-by-step instructions for implementing TerraGuard AgentShield in regulated enterprise environments.
+This guide shows how to pilot TerraGuard AgentShield in a regulated engineering environment.
 
-## 1. Local developer machine setup
-
-### Prerequisites
-- Python 3.10+
-- Git
-- AI coding agent (Claude Code, GitHub Copilot, Cursor, etc.)
-
-### Installation
+## 1. Install Locally
 
 ```bash
-# Clone the repository
-git clone https://github.com/Huzefaaa2/terraguard-agentshield
+git clone https://github.com/Huzefaaa2/terraguard-agentshield.git
 cd terraguard-agentshield
-
-# Create a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install TerraGuard AgentShield
-pip install -e .
+pip install -e ".[dev]"
 ```
 
-### Initialize a workspace
+Verify:
 
 ```bash
-# Start a governed session
+terraguard-agentshield version
+terraguard-agentshield policy list
+```
+
+## 2. Start an AI Governance Session
+
+```bash
 terraguard-agentshield agent start \
   --tool claude-code \
   --repo . \
@@ -35,320 +29,147 @@ terraguard-agentshield agent start \
   --output .terraguard/audit
 ```
 
-### Test the runtime guard
+This creates a session file:
 
-```bash
-# This should be blocked
-terraguard-agentshield agent exec "terraform apply" \
-  --policy-pack terraform-ai-guardrails
-
-# This should be allowed
-terraguard-agentshield agent exec "terraform plan" \
-  --policy-pack terraform-ai-guardrails
+```text
+.terraguard/audit/session-<session-id>.json
 ```
 
----
+## 3. Check Commands Before Execution
 
-## 2. GitHub Actions integration
+Allowed example:
 
-### Add AgentShield to your CI/CD
+```bash
+terraguard-agentshield agent exec "terraform plan" \
+  --policy-pack terraform-ai-guardrails \
+  --output .terraguard/audit
+```
 
-Create `.github/workflows/agentshield.yml`:
+Blocked example:
+
+```bash
+terraguard-agentshield agent exec "terraform apply -auto-approve" \
+  --policy-pack terraform-ai-guardrails \
+  --output .terraguard/audit
+```
+
+Approval-required example:
+
+```bash
+terraguard-agentshield agent exec "aws s3 ls" \
+  --policy-pack banking-regulated-ai \
+  --output .terraguard/audit
+```
+
+## 4. Check File Access
+
+Block secret reads:
+
+```bash
+terraguard-agentshield agent check-file .env --mode read \
+  --policy-pack ai-agent-baseline \
+  --output .terraguard/audit
+```
+
+Require approval for sensitive writes:
+
+```bash
+terraguard-agentshield agent check-file platform/iam/role.tf --mode write \
+  --policy-pack banking-regulated-ai \
+  --output .terraguard/audit
+```
+
+## 5. Check MCP Tool Access
+
+Allow an approved enterprise MCP server:
+
+```bash
+terraguard-agentshield agent check-mcp github-enterprise \
+  --capability read_repo \
+  --policy-pack mcp-server-governance \
+  --output .terraguard/audit
+```
+
+Block a risky MCP server:
+
+```bash
+terraguard-agentshield agent check-mcp personal-drive-mcp \
+  --policy-pack mcp-server-governance \
+  --output .terraguard/audit
+```
+
+Block a risky capability:
+
+```bash
+terraguard-agentshield agent check-mcp github-enterprise \
+  --capability delete_repo \
+  --policy-pack mcp-server-governance \
+  --output .terraguard/audit
+```
+
+## 6. Generate PR Attestation
+
+```bash
+terraguard-agentshield agent attest <session-id> \
+  --audit-dir .terraguard/audit \
+  --format markdown
+```
+
+This produces a markdown report that can be pasted into a pull request or published by CI.
+
+## 7. GitHub Actions Example
+
+Create `.github/workflows/agentshield-attestation.yml`:
 
 ```yaml
-name: TerraGuard AgentShield AI Governance
+name: AgentShield Attestation
 
-on: [pull_request]
+on:
+  pull_request:
 
 jobs:
-  agentshield:
+  attest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install TerraGuard AgentShield
+      - name: Install AgentShield
         run: pip install terraguard-agentshield
-      
-      - name: Load audit from PR
+      - name: Generate attestation when audit exists
         run: |
-          # If .terraguard/audit/ exists in PR, load it
-          if [ -d ".terraguard/audit" ]; then
-            terraguard-agentshield agent attest \
-              $(ls -t .terraguard/audit/session-*.json | head -1 | sed 's/.*session-//;s/\.json//') \
-              --format markdown > /tmp/attestation.md
+          if ls .terraguard/audit/session-*.json >/dev/null 2>&1; then
+            SESSION_ID=$(ls -t .terraguard/audit/session-*.json | head -1 | sed 's/.*session-//;s/\.json//')
+            terraguard-agentshield agent attest "$SESSION_ID" \
+              --audit-dir .terraguard/audit \
+              --format markdown > agentshield-attestation.md
+          else
+            echo "No AgentShield audit found" > agentshield-attestation.md
           fi
-      
-      - name: Post attestation comment
-        if: always()
-        uses: actions/github-script@v6
+      - uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-            const attestation = fs.existsSync('/tmp/attestation.md')
-              ? fs.readFileSync('/tmp/attestation.md', 'utf8')
-              : 'No AI governance report available';
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: attestation
-            });
+          name: agentshield-attestation
+          path: agentshield-attestation.md
 ```
 
----
+## 8. Pilot Rollout Model
 
-## 3. SIEM integration (Splunk)
+| Stage | Policy mode | Objective |
+| --- | --- | --- |
+| Week 1 | Audit only | Understand agent behavior and common commands |
+| Week 2 | Block secrets | Prevent `.env`, tfstate, certificates, and keys from entering AI context |
+| Week 3 | Block destructive commands | Prevent `terraform apply`, `kubectl delete`, cloud IAM creation |
+| Week 4 | Require approval | Gate IAM, security, workflow, and production-impacting changes |
+| Week 5+ | PR attestation | Make AgentShield evidence part of protected branch review |
 
-### Configure webhook
+## 9. Enterprise Operating Model
 
-```bash
-export TERRAGUARD_WEBHOOK_URL=https://your-splunk-instance.com/services/collector/event \
-  -H "Authorization: Splunk your-hec-token"
-```
+Recommended controls:
 
-### Create Splunk input
-
-In Splunk, create an HTTP Event Collector input:
-
-```
-Settings → Data Inputs → HTTP Event Collector
-Create New Token: terraguard-agentshield
-Source Type: terraguard:audit
-Index: security
-```
-
-### Send evidence
-
-```bash
-terraguard-agentshield agent exec "terraform plan" \
-  --webhook-url "https://your-splunk-instance.com:8088/services/collector/event" \
-  --policy-pack banking-regulated-ai
-```
-
-Splunk will automatically ingest:
-```
-session_id=abc123
-tool=claude-code
-actions=5
-blocked_actions=2
-required_approvals=1
-```
-
----
-
-## 4. Jira integration
-
-### Create Jira webhook
-
-In Jira, set up a webhook to receive AgentShield evidence:
-
-```
-Project Settings → Automation → Webhook
-URL: https://your-jira-instance.com/rest/api/2/issue/
-Auth: Basic (Jira API token)
-```
-
-### Jira linking function
-
-Create `jira_integration.py`:
-
-```python
-import requests
-from terraguard_agentshield.audit import SessionAudit
-
-def link_to_jira(audit: SessionAudit, jira_url: str, api_token: str, project_key: str):
-    """Link AI governance evidence to a Jira ticket."""
-    
-    if any(action.decision == "block" for action in audit.actions):
-        severity = "High"
-    elif any(action.decision == "require_approval" for action in audit.actions):
-        severity = "Medium"
-    else:
-        severity = "Low"
-    
-    issue = {
-        "fields": {
-            "project": {"key": project_key},
-            "issuetype": {"name": "Task"},
-            "summary": f"AI Agent Governance Review: {audit.tool}",
-            "description": f"Session: {audit.session_id}\nSeverity: {severity}\n\n" +
-                          "\n".join(f"- {a.type}: {a.target} ({a.decision})" for a in audit.actions),
-            "labels": ["ai-governance", "agentshield"],
-        }
-    }
-    
-    response = requests.post(
-        f"{jira_url}/rest/api/2/issue",
-        json=issue,
-        auth=(api_token.split(":")[0], api_token.split(":")[1]),
-    )
-    return response.status_code == 201
-```
-
----
-
-## 5. ServiceNow integration
-
-### Configure change request
-
-Create a ServiceNow flow that creates change requests from AI governance evidence:
-
-```bash
-# Export as JSON for ServiceNow API
-terraguard-agentshield agent attest <session-id> \
-  --format json | \
-  curl -X POST \
-    -H "Content-Type: application/json" \
-    -d @- \
-    "https://your-servicenow-instance.service-now.com/api/now/table/change_request" \
-    -u admin:password
-```
-
----
-
-## 6. Policy pack customization
-
-### Create your organization's policy
-
-`policies/org-custom-ai/policy.yaml`:
-
-```yaml
-metadata:
-  id: org-custom-ai
-  title: ACME Corp AI Governance
-  description: Custom policy for ACME regulated workloads
-  version: 1.0.0
-
-filesystem:
-  block_read:
-    - ".env"
-    - "**/*secrets*"
-    - "**/credentials/**"
-  require_approval_write:
-    - "**/iam/**"
-    - "**/security/**"
-
-commands:
-  block:
-    - "terraform apply*"
-    - "kubectl delete*"
-  allow:
-    - "terraform plan*"
-    - "git*"
-
-git:
-  require_pull_request: true
-  require_human_reviewer: true
-  require_ai_attestation: true
-```
-
-### Load in CI/CD
-
-```bash
-terraguard-agentshield agent start \
-  --tool claude-code \
-  --repo . \
-  --policy-pack ai-agent-baseline \
-  --policy-pack org-custom-ai
-```
-
----
-
-## 7. Enterprise deployment
-
-### Architecture
-
-```
-Developer Workstation
-  └─ Claude Code / Copilot / Cursor
-     └─ TerraGuard AgentShield CLI
-        └─ Session Audit → .terraguard/
-           └─ GitHub (PR comment + artifact)
-           └─ SIEM webhook (Splunk)
-           └─ Jira (linked issues)
-           └─ ServiceNow (change requests)
-```
-
-### Deployment checklist
-
-- [ ] Install TerraGuard AgentShield on dev workstations (via Homebrew or pip)
-- [ ] Configure organization policy pack in `.terraguard/policy.yaml`
-- [ ] Set up GitHub Actions workflow for PR attestation
-- [ ] Configure SIEM webhook URL in CI/CD environment variables
-- [ ] Create Jira integration function in your automation engine
-- [ ] Set up ServiceNow change request sync
-- [ ] Publish policy pack documentation to internal wiki
-- [ ] Train developers on `terraguard agent` commands
-- [ ] Monitor audit logs for policy violations
-- [ ] Iterate on policies based on blocked actions
-
----
-
-## 8. Monitoring and metrics
-
-### Key metrics to track
-
-```
-terraguard.agent.sessions_started
-terraguard.agent.actions_total
-terraguard.agent.actions_allowed
-terraguard.agent.actions_blocked
-terraguard.agent.actions_requiring_approval
-
-Breakdown by:
-  - tool (claude-code, copilot, cursor, duo)
-  - policy_pack (ai-agent-baseline, banking-regulated-ai, terraform-ai-guardrails)
-  - decision (allow, block, require_approval)
-```
-
-### Health check
-
-```bash
-# Test that agentshield is running and policies are loaded
-terraguard-agentshield policy list
-# Should return all available policy packs
-```
-
----
-
-## 9. Security considerations
-
-- Store `.terraguard/` audit logs in a secure location
-- Rotate webhook URLs and API tokens regularly
-- Enforce HTTPS for all webhook connections
-- Use signed YAML policy bundles (future feature)
-- Monitor audit logs for suspicious patterns
-- Periodically review and update policies
-
----
-
-## Support and troubleshooting
-
-### Common issues
-
-**Issue**: `Policy pack not found`
-```bash
-# Solution: Verify the policy pack exists
-terraguard-agentshield policy list
-```
-
-**Issue**: Command not intercepted as expected
-```bash
-# Solution: Check the runtime pattern matching
-terraguard-agentshield policy describe <pack-id>
-```
-
-**Issue**: Webhook not sending evidence
-```bash
-# Solution: Verify webhook URL is reachable
-curl -X POST <webhook-url> -d '{"test": "ok"}'
-```
-
-### Get help
-
-- GitHub Issues: https://github.com/Huzefaaa2/terraguard-agentshield/issues
-- LinkedIn: https://www.linkedin.com/in/huzefaaa
+- Use enterprise-approved AI coding agents only.
+- Keep production credentials and sensitive data unavailable to agentic sessions.
+- Add AgentShield policies to each regulated repo.
+- Require independent human review for protected branches.
+- Store AgentShield audit evidence with PRs and compliance records.
+- Track unknown commands and refine policy packs every sprint during pilot.
