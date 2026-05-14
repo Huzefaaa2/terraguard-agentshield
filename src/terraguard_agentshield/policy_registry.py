@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib import resources
-from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+try:
+    from importlib.resources.abc import Traversable
+except ModuleNotFoundError:  # Python 3.10 compatibility
+    from importlib.abc import Traversable
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICY_DIR = ROOT / "policies"
