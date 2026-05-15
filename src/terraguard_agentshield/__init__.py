@@ -7,4 +7,6 @@ __all__ = [
     "runtime",
     "audit",
     "hooks",
+    "evidence",
+    "policy_signing",
 ]

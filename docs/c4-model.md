@@ -109,5 +109,7 @@ flowchart LR
 | Packaged policy packs | Implemented |
 | JSON audit and markdown attestation | Implemented |
 | Claude Code hook adapter | Implemented |
-| GitHub Action attestation validation | Next |
+| Policy signing | Implemented |
+| Attestation validation | Implemented |
+| GitHub Action attestation validation | Example provided |
 | SIEM/GRC exporters | Roadmap |

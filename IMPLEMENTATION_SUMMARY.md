@@ -16,6 +16,8 @@ Implemented:
 - Session audit JSON
 - PR-ready markdown attestation
 - Webhook evidence sender with optional HMAC signing
+- Detached policy signing and verification
+- Attestation validation for protected branch checks
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -25,7 +27,7 @@ Not yet implemented:
 
 - GitHub Copilot/Codex workflow adapters
 - Native Jira/ServiceNow integrations
-- Policy signing and inheritance
+- Policy inheritance
 - Semantic risk engine
 - Web UI
 
@@ -73,6 +75,9 @@ terraguard-agentshield agent check-mcp github-enterprise --capability read_repo
 terraguard-agentshield hooks claude --policy-pack banking-regulated-ai
 terraguard-agentshield agent attest <session-id> --format markdown
 terraguard-agentshield evidence send-webhook <session-id> --url https://security.example.com/events
+terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml
+terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
+terraguard-agentshield evidence validate --audit-dir .terraguard/audit
 ```
 
 ## Policy Packs
@@ -90,7 +95,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 21 passed
+pytest -q -> 28 passed
 ```
 
 ## Recommended Next Implementation
@@ -98,7 +103,7 @@ pytest -q -> 21 passed
 The next recommended development step is **v0.2 Multi-Agent Integrations**:
 
 1. Add Codex/Codex CLI governance examples.
-2. Add GitHub Actions attestation validation.
-3. Add examples for Copilot PR evidence workflows.
-4. Add retry controls and SIEM receiver examples for webhook delivery.
-5. Add signed policy bundles.
+2. Add examples for Copilot PR evidence workflows.
+3. Add retry controls and SIEM receiver examples for webhook delivery.
+4. Add asymmetric signing option for policy bundles.
+5. Add semantic risk classification for source and IaC diffs.

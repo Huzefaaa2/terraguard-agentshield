@@ -21,6 +21,8 @@ Status: **Implemented in this repo**
 - Session audit JSON
 - PR markdown attestation
 - Webhook evidence sender with optional HMAC signing
+- Detached policy signatures
+- Attestation validation for protected branch checks
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -36,7 +38,7 @@ Recommended next implementation phase.
 - Hardened Claude Code hook packaging and cross-platform examples
 - Codex/Codex CLI wrapper examples using `AGENTS.md`
 - GitHub Copilot cloud-agent PR attestation workflow
-- GitHub Actions check that validates a required AgentShield audit artifact
+- GitHub Actions examples for required AgentShield checks
 - Documentation for safe pilot rollout in regulated repos
 
 ## v0.3: Enterprise Evidence and Approval
@@ -50,7 +52,7 @@ Recommended next implementation phase.
 
 ## v0.4: Policy Governance
 
-- Policy signing and verification
+- Asymmetric policy signing option
 - Organization policy pack templates
 - Policy inheritance: enterprise -> business unit -> repo
 - Policy test harness

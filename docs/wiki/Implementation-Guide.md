@@ -65,3 +65,19 @@ terraguard-agentshield evidence send-webhook <session-id> \
   --audit-dir .terraguard/audit \
   --url https://security.example.com/events
 ```
+
+## Sign Policy
+
+```bash
+export TERRAGUARD_AGENTSHIELD_POLICY_SECRET="replace-me"
+terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml
+terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
+```
+
+## Validate Evidence
+
+```bash
+terraguard-agentshield evidence validate \
+  --audit-dir .terraguard/audit \
+  --fail-on block,require_approval
+```

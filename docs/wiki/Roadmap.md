@@ -8,6 +8,8 @@ Implemented:
 - Built-in policy packs
 - File, command, Git, and MCP decisions
 - Claude Code `PreToolUse` hook adapter
+- Detached policy signatures
+- Attestation validation for protected branch checks
 - JSON session audit
 - PR markdown attestation
 - CLI workflow

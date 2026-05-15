@@ -66,7 +66,7 @@ commands:
 
 ### Policy pack inheritance
 
-Policy pack inheritance is planned for a future release. In the current MVP, create one composed policy pack per environment or team.
+Policy pack inheritance is planned for a future release. In the current enterprise foundation, create one composed policy pack per environment or team.
 
 Recommended structure:
 

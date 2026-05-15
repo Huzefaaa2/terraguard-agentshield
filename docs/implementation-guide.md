@@ -153,7 +153,26 @@ terraguard-agentshield evidence send-webhook <session-id> \
   --url https://security.example.com/events
 ```
 
-## 9. GitHub Actions Example
+## 9. Sign and Verify Policy Bundles
+
+```bash
+export TERRAGUARD_AGENTSHIELD_POLICY_SECRET="replace-me"
+terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml \
+  --signer platform-security
+terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
+```
+
+## 10. Validate Evidence for Protected Branches
+
+```bash
+terraguard-agentshield evidence validate \
+  --audit-dir .terraguard/audit \
+  --require-policy-pack banking-regulated-ai \
+  --fail-on block,require_approval \
+  --output agentshield-validation.json
+```
+
+## 11. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -189,7 +208,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 10. Pilot Rollout Model
+## 12. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |
@@ -199,7 +218,7 @@ jobs:
 | Week 4 | Require approval | Gate IAM, security, workflow, and production-impacting changes |
 | Week 5+ | PR attestation | Make AgentShield evidence part of protected branch review |
 
-## 11. Enterprise Operating Model
+## 13. Enterprise Operating Model
 
 Recommended controls:
 

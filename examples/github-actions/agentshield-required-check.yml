@@ -1,0 +1,37 @@
+name: AgentShield Required Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  agentshield-required:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install AgentShield
+        run: pip install terraguard-agentshield
+      - name: Verify signed policy pack
+        env:
+          TERRAGUARD_AGENTSHIELD_POLICY_SECRET: ${{ secrets.AGENTSHIELD_POLICY_SECRET }}
+        run: |
+          terraguard-agentshield policy verify \
+            policies/banking-regulated-ai/policy.yaml \
+            --signature policies/banking-regulated-ai/policy.yaml.sig
+      - name: Validate AgentShield evidence
+        run: |
+          SESSION_ID=$(ls -t .terraguard/audit/session-*.json | head -1 | sed 's/.*session-//;s/\.json//')
+          terraguard-agentshield evidence validate \
+            --session-id "$SESSION_ID" \
+            --audit-dir .terraguard/audit \
+            --require-policy-pack banking-regulated-ai \
+            --fail-on block,require_approval \
+            --output agentshield-validation.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agentshield-validation
+          path: agentshield-validation.json

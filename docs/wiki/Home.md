@@ -15,6 +15,8 @@ Implemented:
 - Runtime policy decisions for file access
 - Command allow/block/approval decisions
 - MCP server allowlist and capability decisions
+- Detached policy signing and verification
+- Attestation validation for protected branch checks
 - Protected branch Git decision model
 - Built-in policy packs
 - Session audit JSON
@@ -39,6 +41,8 @@ Implemented:
 - [C4 Model](C4-Model)
 - [Implementation Guide](Implementation-Guide)
 - [Claude Code Hooks](Claude-Code-Hooks)
+- [Policy Signing](Policy-Signing)
+- [Attestation Validation](Attestation-Validation)
 - [Policy Authoring](Policy-Authoring)
 - [Threat Model](Threat-Model)
 - [Enterprise Adoption](Enterprise-Adoption)

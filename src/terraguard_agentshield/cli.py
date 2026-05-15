@@ -12,11 +12,23 @@ from rich.json import JSON
 
 from terraguard_agentshield.agent import AgentSessionManager
 from terraguard_agentshield.audit import AuditAction, SessionAudit
+from terraguard_agentshield.evidence import (
+    load_audit_for_validation,
+    validate_attestation,
+    write_validation_result,
+)
 from terraguard_agentshield.hooks import ClaudeHookProcessor
 from terraguard_agentshield.integrations import (
     CommandInterceptor,
     GitHubPRAttestationExporter,
     WebhookExporter,
+)
+from terraguard_agentshield.policy_signing import (
+    load_policy_file,
+    read_signature,
+    sign_policy,
+    verify_policy_signature,
+    write_signature,
 )
 from terraguard_agentshield.policy_registry import PolicyRegistry
 from terraguard_agentshield.runtime import RuntimeGuard
@@ -235,6 +247,39 @@ def send_webhook(
     raise typer.Exit(code=1)
 
 
+@evidence_app.command("validate")
+def validate_evidence(
+    session_id: Annotated[str | None, typer.Option(help="Session ID. Defaults to latest audit.")] = None,
+    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
+    fail_on: Annotated[str, typer.Option(help="Comma-separated decisions that fail validation.")] = "block,require_approval",
+    require_policy_pack: Annotated[str | None, typer.Option(help="Required policy pack ID.")] = None,
+    require_tool: Annotated[str | None, typer.Option(help="Required AI tool identifier.")] = None,
+    min_actions: Annotated[int, typer.Option(help="Minimum expected audited actions.")] = 1,
+    output: Annotated[Path | None, typer.Option(help="Optional JSON validation report path.")] = None,
+) -> None:
+    """Validate AgentShield audit evidence for protected branch checks."""
+    try:
+        audit = load_audit_for_validation(audit_dir, session_id=session_id)
+    except FileNotFoundError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    result = validate_attestation(
+        audit,
+        fail_on={item.strip() for item in fail_on.split(",") if item.strip()},
+        require_policy_pack=require_policy_pack,
+        require_tool=require_tool,
+        min_actions=min_actions,
+    )
+
+    if output:
+        write_validation_result(result, output)
+
+    console.print(json.dumps(result.to_dict(), indent=2))
+    if not result.valid:
+        raise typer.Exit(code=1)
+
+
 @policy_app.command("list")
 def list_policies() -> None:
     """List available policy packs."""
@@ -259,6 +304,52 @@ def describe_policy(
     if pack.get("policy"):
         console.print("[yellow]Policy rules:[/yellow]")
         console.print(JSON(json.dumps(pack["policy"], indent=2)))
+
+
+@policy_app.command("sign")
+def sign_policy_pack(
+    policy_path: Annotated[Path, typer.Argument(help="Path to policy.yaml.")],
+    output: Annotated[Path | None, typer.Option(help="Signature output path.")] = None,
+    signer: Annotated[str, typer.Option(help="Signer identity for audit metadata.")] = "terraguard-agentshield",
+    secret: Annotated[str | None, typer.Option(help="Signing secret. Prefer env var in CI.")] = None,
+    secret_env: Annotated[str, typer.Option(help="Environment variable containing signing secret.")] = "TERRAGUARD_AGENTSHIELD_POLICY_SECRET",
+) -> None:
+    """Create a detached signature for a policy bundle."""
+    signing_secret = secret or os.environ.get(secret_env)
+    if not signing_secret:
+        console.print(f"[red]ERROR[/red] Signing secret missing. Set {secret_env}.")
+        raise typer.Exit(code=1)
+
+    policy = load_policy_file(policy_path)
+    signature = sign_policy(policy, signing_secret, signer=signer)
+    signature_path = output or policy_path.with_suffix(policy_path.suffix + ".sig")
+    write_signature(signature, signature_path)
+    console.print(f"[green]OK[/green] Policy signature written: {signature_path}")
+
+
+@policy_app.command("verify")
+def verify_policy_pack(
+    policy_path: Annotated[Path, typer.Argument(help="Path to policy.yaml.")],
+    signature: Annotated[Path | None, typer.Option(help="Signature JSON path.")] = None,
+    secret: Annotated[str | None, typer.Option(help="Verification secret. Prefer env var in CI.")] = None,
+    secret_env: Annotated[str, typer.Option(help="Environment variable containing verification secret.")] = "TERRAGUARD_AGENTSHIELD_POLICY_SECRET",
+) -> None:
+    """Verify a detached policy bundle signature."""
+    verification_secret = secret or os.environ.get(secret_env)
+    if not verification_secret:
+        console.print(f"[red]ERROR[/red] Verification secret missing. Set {secret_env}.")
+        raise typer.Exit(code=1)
+
+    policy = load_policy_file(policy_path)
+    signature_path = signature or policy_path.with_suffix(policy_path.suffix + ".sig")
+    policy_signature = read_signature(signature_path)
+    valid, reason = verify_policy_signature(policy, policy_signature, verification_secret)
+    if valid:
+        console.print(f"[green]OK[/green] {reason}")
+        return
+
+    console.print(f"[red]ERROR[/red] {reason}")
+    raise typer.Exit(code=1)
 
 
 def main() -> None:

@@ -173,7 +173,7 @@ The following are NOT addressed by TerraGuard AgentShield:
 Planned controls for future versions:
 
 1. **Semantic policy engine**: Intent-based decision making (not just pattern matching)
-2. **Policy signing**: Signed policy bundles to prevent tampering
+2. **Asymmetric policy signing**: Public-key signature verification for large enterprise policy distribution
 3. **Approval workflow integration**: ServiceNow, Jira, GitHub PR approval API
 4. **SIEM/GRC integrations**: Datadog, Splunk, Sentinel, Salesforce
 5. **Machine learning**: Anomaly detection on agent behavior patterns

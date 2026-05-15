@@ -116,7 +116,7 @@ Controls:
 - `git.require_human_reviewer`
 - `git.require_ai_attestation`
 
-The current MVP evaluates protected branch push decisions locally. Future releases will integrate deeper with GitHub/GitLab branch protection and PR checks.
+The current enterprise foundation evaluates protected branch push decisions locally and provides CI attestation validation. Future releases will integrate deeper with GitHub/GitLab branch protection APIs.
 
 ### MCP Guard
 
@@ -142,7 +142,7 @@ Use cases:
 | Local CLI wrapper | Developer manually checks commands/files/MCP before agent action | Implemented |
 | Claude Code hook adapter | `PreToolUse` policy enforcement for Bash, files, and MCP tools | Implemented |
 | GitHub PR attestation | Attach AI governance report to PR | Partially implemented |
-| CI policy check | Require attestation and policy pack validation in GitHub Actions | Roadmap |
+| CI policy check | Require attestation and policy pack validation in GitHub Actions | Implemented |
 | Enterprise evidence export | Send audit to SIEM/GRC/ServiceNow/Jira | Roadmap |
 
 ## Reference Architecture

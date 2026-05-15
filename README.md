@@ -116,12 +116,30 @@ terraguard-agentshield agent attest <session-id> \
   --format markdown
 ```
 
+Validate audit evidence for a protected branch check:
+
+```bash
+terraguard-agentshield evidence validate \
+  --audit-dir .terraguard/audit \
+  --require-policy-pack banking-regulated-ai \
+  --fail-on block,require_approval
+```
+
 Send evidence to an enterprise webhook or SIEM endpoint:
 
 ```bash
 terraguard-agentshield evidence send-webhook <session-id> \
   --audit-dir .terraguard/audit \
   --url https://security.example.com/agentshield/events
+```
+
+Sign and verify a policy bundle:
+
+```bash
+export TERRAGUARD_AGENTSHIELD_POLICY_SECRET="replace-me"
+terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml \
+  --signer platform-security
+terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
 ```
 
 ## Policy Packs
@@ -189,6 +207,8 @@ More detail:
 - [Threat Model](docs/threat-model.md)
 - [Implementation Guide](docs/implementation-guide.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
+- [Policy Signing](docs/policy-signing.md)
+- [Attestation Validation](docs/attestation-validation.md)
 - [Policy Authoring](docs/policy-authoring.md)
 - [Enterprise Adoption](docs/enterprise-adoption.md)
 - [Case Studies](docs/case-studies.md)
@@ -209,13 +229,14 @@ Implemented:
 - Session audit JSON
 - PR-ready markdown attestation
 - Webhook evidence sender with optional HMAC signing
+- Detached policy signatures with HMAC-SHA256
+- CI attestation validation for protected branch checks
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
 - GitHub Copilot/Codex CI attestation examples
-- Signed policy bundles
 - Semantic diff/risk engine
 
 ## References

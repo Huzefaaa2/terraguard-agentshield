@@ -18,11 +18,17 @@ jobs:
           mkdir -p .terraguard/artifacts
           if ls .terraguard/audit/session-*.json >/dev/null 2>&1; then
             SESSION_ID=$(ls -t .terraguard/audit/session-*.json | head -1 | sed 's/.*session-//;s/\.json//')
+            terraguard-agentshield evidence validate \
+              --session-id "$SESSION_ID" \
+              --audit-dir .terraguard/audit \
+              --fail-on block,require_approval \
+              --output .terraguard/artifacts/agentshield-validation.json
             terraguard-agentshield agent attest "$SESSION_ID" \
               --audit-dir .terraguard/audit \
               --format markdown > .terraguard/artifacts/agentshield-report.md
           else
-            echo "No AgentShield audit found" > .terraguard/artifacts/agentshield-report.md
+            echo "No AgentShield audit found"
+            exit 1
           fi
       - uses: actions/upload-artifact@v4
         with:
