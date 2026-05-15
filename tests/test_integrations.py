@@ -1,9 +1,12 @@
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import Request
 
 from terraguard_agentshield.audit import AuditAction, SessionAudit
 from terraguard_agentshield.integrations import (
     CommandInterceptor,
     GitHubPRAttestationExporter,
+    WebhookExporter,
 )
 from terraguard_agentshield.runtime import RuntimeGuard
 
@@ -75,3 +78,44 @@ def test_session_audit_round_trip_from_json_payload() -> None:
     assert parsed.repo == Path("/repo")
     assert parsed.policy_pack == "banking-regulated-ai"
     assert parsed.actions[0].metadata["capability"] == "read_repo"
+
+
+def test_webhook_exporter_sends_signed_payload(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class Response:
+        status = 202
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+    def fake_urlopen(request: Request, timeout: int) -> Response:
+        captured["request"] = request
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    audit = SessionAudit(session_id="test-004", tool="claude-code", repo=Path("."))
+
+    ok = WebhookExporter(
+        "https://example.com/events", hmac_secret="secret", timeout=3
+    ).export(audit)
+
+    request = captured["request"]
+    assert ok
+    assert captured["timeout"] == 3
+    assert isinstance(request, Request)
+    assert request.headers["X-agentshield-signature"].startswith("sha256=")
+
+
+def test_webhook_exporter_returns_false_on_delivery_error(monkeypatch) -> None:
+    def fake_urlopen(request: Request, timeout: int) -> None:
+        raise URLError("down")
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    audit = SessionAudit(session_id="test-005", tool="claude-code", repo=Path("."))
+
+    assert not WebhookExporter("https://example.com/events").export(audit)

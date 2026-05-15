@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import subprocess
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -80,18 +84,36 @@ class GitHubPRAttestationExporter:
 
 
 class WebhookExporter:
-    def __init__(self, webhook_url: str) -> None:
+    def __init__(
+        self,
+        webhook_url: str,
+        hmac_secret: str | None = None,
+        timeout: int = 10,
+    ) -> None:
         self.webhook_url = webhook_url
+        self.hmac_secret = hmac_secret
+        self.timeout = timeout
 
     def export(self, audit: SessionAudit) -> bool:
         try:
-            import requests
+            payload = json.dumps(audit.to_dict()).encode("utf-8")
+            headers = {
+                "Content-Type": "application/json",
+                "User-Agent": "terraguard-agentshield",
+            }
+            if self.hmac_secret:
+                signature = hmac.new(
+                    self.hmac_secret.encode("utf-8"), payload, hashlib.sha256
+                ).hexdigest()
+                headers["X-AgentShield-Signature"] = f"sha256={signature}"
 
-            response = requests.post(
+            request = urllib.request.Request(
                 self.webhook_url,
-                json=audit.to_dict(),
-                timeout=10,
+                data=payload,
+                headers=headers,
+                method="POST",
             )
-            return response.status_code in (200, 201, 204)
-        except Exception:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return response.status in (200, 201, 202, 204)
+        except (urllib.error.URLError, TimeoutError, OSError):
             return False

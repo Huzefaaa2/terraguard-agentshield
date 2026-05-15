@@ -99,12 +99,29 @@ terraguard-agentshield agent check-mcp github-enterprise \
   --policy-pack mcp-server-governance
 ```
 
+Connect Claude Code `PreToolUse` hooks:
+
+```bash
+terraguard-agentshield hooks claude \
+  --policy-pack banking-regulated-ai \
+  --repo . \
+  --audit-dir .terraguard/audit
+```
+
 Generate a PR attestation:
 
 ```bash
 terraguard-agentshield agent attest <session-id> \
   --audit-dir .terraguard/audit \
   --format markdown
+```
+
+Send evidence to an enterprise webhook or SIEM endpoint:
+
+```bash
+terraguard-agentshield evidence send-webhook <session-id> \
+  --audit-dir .terraguard/audit \
+  --url https://security.example.com/agentshield/events
 ```
 
 ## Policy Packs
@@ -171,13 +188,14 @@ More detail:
 - [C4 Model](docs/c4-model.md)
 - [Threat Model](docs/threat-model.md)
 - [Implementation Guide](docs/implementation-guide.md)
+- [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Authoring](docs/policy-authoring.md)
 - [Enterprise Adoption](docs/enterprise-adoption.md)
 - [Case Studies](docs/case-studies.md)
 - [Roadmap](docs/roadmap.md)
 - [Wiki source pages](docs/wiki/Home.md)
 
-## Current MVP Status
+## Current Enterprise Foundation Status
 
 Implemented:
 
@@ -186,17 +204,17 @@ Implemented:
 - File read/write decisions with block and approval-required outcomes
 - Command decisions with block, allow, and approval-required outcomes
 - MCP allowlist/blocklist/capability decisions
+- Claude Code `PreToolUse` hook adapter
 - Protected branch git decision model
 - Session audit JSON
 - PR-ready markdown attestation
+- Webhook evidence sender with optional HMAC signing
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Claude Code hook adapter
 - GitHub Copilot/Codex CI attestation examples
-- SIEM/webhook export CLI
 - Signed policy bundles
 - Semantic diff/risk engine
 

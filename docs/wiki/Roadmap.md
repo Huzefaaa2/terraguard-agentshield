@@ -7,13 +7,13 @@ Implemented:
 - Runtime policy engine
 - Built-in policy packs
 - File, command, Git, and MCP decisions
+- Claude Code `PreToolUse` hook adapter
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
 
 ## v0.2 Real Agent Integrations
 
-- Claude Code `PreToolUse` hook adapter
 - Codex/Codex CLI examples
 - GitHub Copilot PR attestation workflow
 - GitHub Actions attestation check

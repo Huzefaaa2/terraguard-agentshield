@@ -1,6 +1,6 @@
 # Webhook and SIEM Integration
 
-Webhook and native SIEM exports are part of the enterprise evidence roadmap. The current MVP writes local JSON session evidence and PR-ready markdown attestation. This page defines the planned integration contract so enterprise pilots can design receivers without overloading the current CLI.
+Webhook delivery is implemented through the `evidence send-webhook` command. Native SIEM-specific exporters remain roadmap work, but enterprises can already send signed JSON evidence to a webhook receiver, SIEM collector, GRC archive, or change-management bridge.
 
 ## Current Evidence Outputs
 
@@ -20,9 +20,7 @@ terraguard-agentshield agent attest <session-id> \
   --format markdown
 ```
 
-## Planned CLI
-
-Planned command:
+## Send Evidence
 
 ```bash
 terraguard-agentshield evidence send-webhook <session-id> \
@@ -30,7 +28,27 @@ terraguard-agentshield evidence send-webhook <session-id> \
   --url https://your-webhook-endpoint/events
 ```
 
-## Planned Event Payload
+Dry run:
+
+```bash
+terraguard-agentshield evidence send-webhook <session-id> \
+  --audit-dir .terraguard/audit \
+  --url https://your-webhook-endpoint/events \
+  --dry-run
+```
+
+HMAC signing:
+
+```bash
+export TERRAGUARD_AGENTSHIELD_WEBHOOK_SECRET="replace-me"
+terraguard-agentshield evidence send-webhook <session-id> \
+  --audit-dir .terraguard/audit \
+  --url https://your-webhook-endpoint/events
+```
+
+AgentShield sends `X-AgentShield-Signature: sha256=<digest>` when a signing secret is configured.
+
+## Event Payload
 
 ```json
 {
@@ -73,9 +91,7 @@ Webhook receivers should:
 
 ## Roadmap
 
-- Webhook sender CLI
 - Retry and timeout controls
-- HMAC request signing
 - Splunk HEC example
 - Microsoft Sentinel example
 - ServiceNow/Jira change evidence mapping

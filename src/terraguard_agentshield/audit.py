@@ -92,6 +92,10 @@ class SessionAudit:
         audit_path.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
         return audit_path
 
+    @classmethod
+    def read(cls, audit_path: Path) -> "SessionAudit":
+        return cls.from_dict(json.loads(audit_path.read_text(encoding="utf-8")))
+
 
 def create_attestation_markdown(audit: SessionAudit) -> str:
     allowed = [action for action in audit.actions if action.decision == "allow"]

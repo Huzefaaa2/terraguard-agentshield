@@ -6,4 +6,5 @@ __all__ = [
     "policy_registry",
     "runtime",
     "audit",
+    "hooks",
 ]

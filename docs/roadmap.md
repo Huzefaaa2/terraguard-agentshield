@@ -16,9 +16,11 @@ Status: **Implemented in this repo**
 - File read/write decisions
 - Command block, allow, and approval decisions
 - MCP allowlist/blocklist/capability decisions
+- Claude Code `PreToolUse` hook adapter
 - Protected branch git decision model
 - Session audit JSON
 - PR markdown attestation
+- Webhook evidence sender with optional HMAC signing
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -31,8 +33,7 @@ Status: **Implemented in this repo**
 
 Recommended next implementation phase.
 
-- Claude Code `PreToolUse` hook adapter for Bash, Read, Edit, Write, and MCP tools
-- Example `.claude/settings.json` hook configuration
+- Hardened Claude Code hook packaging and cross-platform examples
 - Codex/Codex CLI wrapper examples using `AGENTS.md`
 - GitHub Copilot cloud-agent PR attestation workflow
 - GitHub Actions check that validates a required AgentShield audit artifact
@@ -40,7 +41,7 @@ Recommended next implementation phase.
 
 ## v0.3: Enterprise Evidence and Approval
 
-- Webhook exporter CLI for SIEM ingestion
+- Retryable webhook delivery and SIEM receiver examples
 - Splunk and Microsoft Sentinel examples
 - GitHub PR comment publishing workflow
 - Jira and ServiceNow evidence mapping examples

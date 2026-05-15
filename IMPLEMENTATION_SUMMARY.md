@@ -11,9 +11,11 @@ Implemented:
 - File read/write decisions
 - Command allow/block/approval decisions
 - MCP allowlist/blocklist/capability decisions
+- Claude Code `PreToolUse` hook adapter
 - Protected branch Git decision model
 - Session audit JSON
 - PR-ready markdown attestation
+- Webhook evidence sender with optional HMAC signing
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -21,9 +23,7 @@ Implemented:
 
 Not yet implemented:
 
-- Claude Code hook adapter
 - GitHub Copilot/Codex workflow adapters
-- Webhook/SIEM sender CLI
 - Native Jira/ServiceNow integrations
 - Policy signing and inheritance
 - Semantic risk engine
@@ -70,7 +70,9 @@ terraguard-agentshield agent start --tool claude-code --repo .
 terraguard-agentshield agent exec "terraform plan"
 terraguard-agentshield agent check-file .env --mode read
 terraguard-agentshield agent check-mcp github-enterprise --capability read_repo
+terraguard-agentshield hooks claude --policy-pack banking-regulated-ai
 terraguard-agentshield agent attest <session-id> --format markdown
+terraguard-agentshield evidence send-webhook <session-id> --url https://security.example.com/events
 ```
 
 ## Policy Packs
@@ -88,15 +90,15 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 15 passed
+pytest -q -> 21 passed
 ```
 
 ## Recommended Next Implementation
 
-The next recommended development step is **v0.2 Real Agent Integrations**:
+The next recommended development step is **v0.2 Multi-Agent Integrations**:
 
-1. Add a Claude Code `PreToolUse` hook adapter.
-2. Add sample `.claude/settings.json` configuration.
-3. Add GitHub Actions attestation validation.
-4. Add examples for Codex/Copilot PR evidence workflows.
-5. Add a webhook sender CLI after the audit format is stable.
+1. Add Codex/Codex CLI governance examples.
+2. Add GitHub Actions attestation validation.
+3. Add examples for Copilot PR evidence workflows.
+4. Add retry controls and SIEM receiver examples for webhook delivery.
+5. Add signed policy bundles.

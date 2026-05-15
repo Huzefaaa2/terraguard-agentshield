@@ -15,8 +15,10 @@ Core governance:
 - Command decisions for block, allow, and approval-required execution
 - Git protected branch decision model
 - MCP server allowlist, blocklist, risk, and capability decisions
+- Claude Code `PreToolUse` hook adapter
 - Session-based JSON audit trail
 - PR-ready markdown attestation
+- Webhook evidence sender with optional HMAC signing
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -33,6 +35,8 @@ CLI:
 - `terraguard-agentshield agent check-file`
 - `terraguard-agentshield agent check-mcp`
 - `terraguard-agentshield agent attest`
+- `terraguard-agentshield hooks claude`
+- `terraguard-agentshield evidence send-webhook`
 - `terraguard-agentshield policy list`
 - `terraguard-agentshield policy describe`
 
@@ -51,22 +55,19 @@ Documentation:
 
 ### Known Limitations
 
-- Claude Code hooks are not implemented yet.
 - Codex and Copilot workflow adapters are not implemented yet.
-- Webhook/SIEM export CLI is planned but not implemented.
 - Jira and ServiceNow integrations are roadmap items.
 - Policy signing and inheritance are roadmap items.
 - Semantic risk analysis is roadmap work.
 
 ### Recommended Next Release
 
-v0.2 should focus on real agent integrations:
+v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Claude Code `PreToolUse` hook adapter
-- Example `.claude/settings.json`
 - GitHub Actions attestation validation
 - Codex/Copilot PR evidence examples
-- Webhook sender CLI design
+- Retryable webhook delivery and SIEM receiver examples
+- Signed policy bundles
 
 ### Verification
 
@@ -74,7 +75,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 15 passed
+pytest -q -> 21 passed
 ```
 
 ### Links

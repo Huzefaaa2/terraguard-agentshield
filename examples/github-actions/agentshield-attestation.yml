@@ -1,0 +1,30 @@
+name: AgentShield Attestation
+
+on:
+  pull_request:
+
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install AgentShield
+        run: pip install terraguard-agentshield
+      - name: Generate attestation when audit exists
+        run: |
+          mkdir -p .terraguard/artifacts
+          if ls .terraguard/audit/session-*.json >/dev/null 2>&1; then
+            SESSION_ID=$(ls -t .terraguard/audit/session-*.json | head -1 | sed 's/.*session-//;s/\.json//')
+            terraguard-agentshield agent attest "$SESSION_ID" \
+              --audit-dir .terraguard/audit \
+              --format markdown > .terraguard/artifacts/agentshield-report.md
+          else
+            echo "No AgentShield audit found" > .terraguard/artifacts/agentshield-report.md
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agentshield-attestation
+          path: .terraguard/artifacts/

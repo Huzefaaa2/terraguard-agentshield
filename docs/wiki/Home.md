@@ -38,6 +38,7 @@ Implemented:
 - [Architecture](Architecture)
 - [C4 Model](C4-Model)
 - [Implementation Guide](Implementation-Guide)
+- [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Authoring](Policy-Authoring)
 - [Threat Model](Threat-Model)
 - [Enterprise Adoption](Enterprise-Adoption)

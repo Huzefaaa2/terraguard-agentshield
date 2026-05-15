@@ -107,7 +107,23 @@ terraguard-agentshield agent check-mcp github-enterprise \
   --output .terraguard/audit
 ```
 
-## 6. Generate PR Attestation
+## 6. Connect Claude Code Hooks
+
+Use the sample settings at `examples/claude-code/settings.json` to connect Claude Code `PreToolUse` events to AgentShield.
+
+Manual test:
+
+```bash
+printf '%s' '{"session_id":"demo","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"terraform apply -auto-approve"}}' \
+  | terraguard-agentshield hooks claude \
+      --policy-pack terraform-ai-guardrails \
+      --repo . \
+      --audit-dir .terraguard/audit
+```
+
+Expected outcome: a deny decision is returned and evidence is written to `.terraguard/audit/session-demo.json`.
+
+## 7. Generate PR Attestation
 
 ```bash
 terraguard-agentshield agent attest <session-id> \
@@ -117,7 +133,27 @@ terraguard-agentshield agent attest <session-id> \
 
 This produces a markdown report that can be pasted into a pull request or published by CI.
 
-## 7. GitHub Actions Example
+## 8. Send Evidence to a Webhook
+
+Dry run:
+
+```bash
+terraguard-agentshield evidence send-webhook <session-id> \
+  --audit-dir .terraguard/audit \
+  --url https://security.example.com/events \
+  --dry-run
+```
+
+Send with HMAC signing:
+
+```bash
+export TERRAGUARD_AGENTSHIELD_WEBHOOK_SECRET="replace-me"
+terraguard-agentshield evidence send-webhook <session-id> \
+  --audit-dir .terraguard/audit \
+  --url https://security.example.com/events
+```
+
+## 9. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -153,7 +189,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 8. Pilot Rollout Model
+## 10. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |
@@ -163,7 +199,7 @@ jobs:
 | Week 4 | Require approval | Gate IAM, security, workflow, and production-impacting changes |
 | Week 5+ | PR attestation | Make AgentShield evidence part of protected branch review |
 
-## 9. Enterprise Operating Model
+## 11. Enterprise Operating Model
 
 Recommended controls:
 

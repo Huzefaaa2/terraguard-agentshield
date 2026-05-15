@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Edit|Write|MultiEdit|NotebookEdit|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "terraguard-agentshield hooks claude --policy-pack banking-regulated-ai --repo . --audit-dir .terraguard/audit"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -108,6 +108,6 @@ flowchart LR
 | Runtime policy decision engine | Implemented |
 | Packaged policy packs | Implemented |
 | JSON audit and markdown attestation | Implemented |
-| Claude Code hook adapter | Next |
+| Claude Code hook adapter | Implemented |
 | GitHub Action attestation validation | Next |
 | SIEM/GRC exporters | Roadmap |

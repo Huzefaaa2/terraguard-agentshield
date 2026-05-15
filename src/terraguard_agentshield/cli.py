@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -10,15 +12,24 @@ from rich.json import JSON
 
 from terraguard_agentshield.agent import AgentSessionManager
 from terraguard_agentshield.audit import AuditAction, SessionAudit
-from terraguard_agentshield.integrations import CommandInterceptor, GitHubPRAttestationExporter
+from terraguard_agentshield.hooks import ClaudeHookProcessor
+from terraguard_agentshield.integrations import (
+    CommandInterceptor,
+    GitHubPRAttestationExporter,
+    WebhookExporter,
+)
 from terraguard_agentshield.policy_registry import PolicyRegistry
 from terraguard_agentshield.runtime import RuntimeGuard
 
 console = Console()
 app = typer.Typer(add_completion=False)
 agent_app = typer.Typer(help="AI agent runtime commands.")
+evidence_app = typer.Typer(help="Evidence export commands.")
+hooks_app = typer.Typer(help="AI agent hook adapters.")
 policy_app = typer.Typer(help="Policy registry commands.")
 app.add_typer(agent_app, name="agent")
+app.add_typer(evidence_app, name="evidence")
+app.add_typer(hooks_app, name="hooks")
 app.add_typer(policy_app, name="policy")
 
 
@@ -169,6 +180,59 @@ def generate_attestation(
     else:
         console.print(f"[red]ERROR[/red] Unknown format: {format}")
         raise typer.Exit(code=1)
+
+
+@hooks_app.command("claude")
+def claude_hook(
+    policy_pack: Annotated[str, typer.Option(help="Policy pack ID.")] = "ai-agent-baseline",
+    repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
+    audit_dir: Annotated[Path, typer.Option(help="Audit output directory.")] = Path(".terraguard/audit"),
+    tool: Annotated[str, typer.Option(help="Agent tool label for audit evidence.")] = "claude-code",
+) -> None:
+    """Process a Claude Code hook JSON event from stdin."""
+    try:
+        payload = json.loads(sys.stdin.read() or "{}")
+    except json.JSONDecodeError as exc:
+        typer.echo(json.dumps({"error": f"Invalid hook JSON: {exc}"}))
+        raise typer.Exit(code=1) from exc
+
+    processor = ClaudeHookProcessor(
+        policy_pack=policy_pack,
+        repo=repo,
+        audit_dir=audit_dir,
+        tool=tool,
+    )
+    decision = processor.process(payload)
+    typer.echo(json.dumps(decision.output))
+
+
+@evidence_app.command("send-webhook")
+def send_webhook(
+    session_id: Annotated[str, typer.Argument(help="Session ID.")],
+    url: Annotated[str, typer.Option(help="Webhook endpoint URL.")],
+    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
+    hmac_secret: Annotated[str | None, typer.Option(help="Optional HMAC signing secret.")] = None,
+    dry_run: Annotated[bool, typer.Option(help="Print payload without sending.")] = False,
+) -> None:
+    """Send session evidence to an enterprise webhook/SIEM endpoint."""
+    audit_path = audit_dir / f"session-{session_id}.json"
+    if not audit_path.exists():
+        console.print(f"[red]ERROR[/red] Audit file not found: {audit_path}")
+        raise typer.Exit(code=1)
+
+    audit = SessionAudit.read(audit_path)
+    if dry_run:
+        console.print(json.dumps(audit.to_dict(), indent=2))
+        return
+
+    secret = hmac_secret or os.environ.get("TERRAGUARD_AGENTSHIELD_WEBHOOK_SECRET")
+    exporter = WebhookExporter(url, hmac_secret=secret)
+    if exporter.export(audit):
+        console.print("[green]OK[/green] Evidence delivered")
+        return
+
+    console.print("[red]ERROR[/red] Evidence delivery failed")
+    raise typer.Exit(code=1)
 
 
 @policy_app.command("list")

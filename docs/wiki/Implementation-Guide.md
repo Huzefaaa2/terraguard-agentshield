@@ -43,10 +43,25 @@ terraguard-agentshield agent check-mcp github-enterprise \
   --policy-pack mcp-server-governance
 ```
 
+## Connect Claude Code Hooks
+
+```bash
+printf '%s' '{"session_id":"demo","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"terraform apply -auto-approve"}}' \
+  | terraguard-agentshield hooks claude --policy-pack terraform-ai-guardrails
+```
+
 ## Generate Attestation
 
 ```bash
 terraguard-agentshield agent attest <session-id> \
   --audit-dir .terraguard/audit \
   --format markdown
+```
+
+## Send Evidence
+
+```bash
+terraguard-agentshield evidence send-webhook <session-id> \
+  --audit-dir .terraguard/audit \
+  --url https://security.example.com/events
 ```
