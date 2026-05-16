@@ -17,6 +17,7 @@ TerraGuard AgentShield brings the TerraGuard policy philosophy to AI-agent runti
 | Commands | Can the agent run `terraform apply`, cloud IAM commands, or destructive shell commands? | Command block, allow, and approval policy |
 | Git | Can the agent push to protected branches or bypass PR review? | Protected branch decision checks and attestation |
 | MCP/tools | Can the agent connect to unapproved tools or risky MCP servers? | MCP allowlist, blocklist, capability checks, risk scoring |
+| Diff risk | Does the change introduce public exposure, IAM expansion, weak crypto, or secrets? | Semantic risk classification for source and IaC diffs |
 | Evidence | How do reviewers and auditors see what happened? | JSON session audit and PR-ready markdown attestation |
 
 ## Why This Exists
@@ -123,6 +124,16 @@ terraguard-agentshield evidence validate \
   --audit-dir .terraguard/audit \
   --require-policy-pack banking-regulated-ai \
   --fail-on block,require_approval
+```
+
+Classify semantic risk in a source or IaC diff:
+
+```bash
+git diff main...HEAD > change.diff
+terraguard-agentshield risk diff change.diff \
+  --format json \
+  --output agentshield-risk.json \
+  --fail-on high
 ```
 
 Send evidence to an enterprise webhook or SIEM endpoint:
@@ -242,6 +253,7 @@ More detail:
 - [Policy Signing](docs/policy-signing.md)
 - [Attestation Validation](docs/attestation-validation.md)
 - [Codex and Copilot Governance](docs/codex-copilot-governance.md)
+- [Risk Classification](docs/risk-classification.md)
 - [Evidence Routing](docs/evidence-routing.md)
 - [SIEM Integration](docs/siem-integration.md)
 - [Policy Authoring](docs/policy-authoring.md)
@@ -271,12 +283,14 @@ Implemented:
 - Retryable webhook delivery plus Splunk/Sentinel receiver examples
 - Jira and ServiceNow evidence routing
 - Asymmetric policy bundle signing for CI verification
+- Semantic risk classification for source and IaC diffs
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Semantic diff/risk engine
+- Signed evidence bundle format
+- Policy inheritance
 
 ## References
 

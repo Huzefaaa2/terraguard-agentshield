@@ -23,6 +23,7 @@ Implemented:
 - Retryable webhook delivery plus Splunk/Sentinel receiver examples
 - Jira and ServiceNow evidence routing
 - Asymmetric policy bundle signing for CI verification
+- Semantic risk classification for source and IaC diffs
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -31,7 +32,7 @@ Implemented:
 Not yet implemented:
 
 - Policy inheritance
-- Semantic risk engine
+- Advanced semantic risk routing
 - Web UI
 
 ## Repository Structure
@@ -85,6 +86,7 @@ terraguard-agentshield evidence validate --audit-dir .terraguard/audit
 terraguard-agentshield evidence publish-github-comment --audit-dir .terraguard/audit
 terraguard-agentshield evidence publish-jira SEC-123 --audit-dir .terraguard/audit
 terraguard-agentshield evidence publish-servicenow <sys-id> --audit-dir .terraguard/audit
+terraguard-agentshield risk diff change.diff --fail-on high
 ```
 
 ## Policy Packs
@@ -102,15 +104,15 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 37 passed
+pytest -q -> 42 passed
 ```
 
 ## Recommended Next Implementation
 
-The next recommended development step is **v0.2 Enterprise Evidence Routing**:
+The next recommended development step is **v0.3 Evidence Hardening**:
 
-1. Add semantic risk classification for source and IaC diffs.
-2. Add a lightweight enterprise policy management API.
-3. Add deployment hardening examples for containerized receivers.
-4. Add policy inheritance for enterprise -> business unit -> repository.
-5. Add signed evidence bundle format.
+1. Add signed evidence bundle format.
+2. Add policy inheritance for enterprise -> business unit -> repository.
+3. Add a lightweight enterprise policy management API.
+4. Add deployment hardening examples for containerized receivers.
+5. Add dynamic approval routing from risk findings.

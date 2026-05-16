@@ -23,6 +23,7 @@ Implemented:
 - Pull-request-ready markdown attestation
 - GitHub, Jira, and ServiceNow evidence publishing
 - Retryable SIEM webhook delivery
+- Semantic risk classification for source and IaC diffs
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -46,6 +47,7 @@ Implemented:
 - [Policy Signing](Policy-Signing)
 - [Attestation Validation](Attestation-Validation)
 - [Codex and Copilot Governance](Codex-Copilot-Governance)
+- [Risk Classification](Risk-Classification)
 - [SIEM Integration](SIEM-Integration)
 - [Evidence Routing](Evidence-Routing)
 - [Policy Authoring](Policy-Authoring)

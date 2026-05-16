@@ -28,6 +28,7 @@ Status: **Implemented in this repo**
 - Retryable webhook delivery and SIEM receiver examples
 - Jira and ServiceNow evidence routing
 - Asymmetric policy bundle signing
+- Semantic risk classification for source and IaC diffs
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -60,11 +61,10 @@ Recommended next implementation phase.
 - Policy bundle version pinning
 - Control mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and banking technology risk controls
 
-## v0.5: Semantic Risk Engine
+## v0.5: Advanced Semantic Risk Engine
 
-- Diff-aware risk classification
-- IaC intent detection for public exposure, IAM privilege escalation, encryption weakening, and logging removal
-- Source-code sensitive area classification for auth, crypto, payment, identity, and data export paths
+- Policy-pack-specific risk tuning
+- Multi-file context and ownership-aware risk scoring
 - Dynamic approval routing based on action, repo, environment, and policy
 - Remediation suggestions with explainable policy reasoning
 

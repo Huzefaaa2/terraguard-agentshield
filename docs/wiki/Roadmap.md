@@ -15,6 +15,7 @@ Implemented:
 - Retryable webhook delivery and SIEM receiver examples
 - Jira and ServiceNow evidence routing
 - Asymmetric policy bundle signing
+- Semantic risk classification for source and IaC diffs
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
@@ -37,10 +38,8 @@ Implemented:
 - Policy test harness
 - Compliance control mappings
 
-## v0.5 Semantic Risk Engine
+## v0.5 Advanced Semantic Risk Engine
 
-- Diff-aware risk classification
-- IAM/security/encryption/network intent detection
 - Dynamic approval routing
 - Explainable remediation
 

@@ -90,6 +90,17 @@ terraguard-agentshield evidence validate \
   --fail-on block,require_approval
 ```
 
+## Classify Diff Risk
+
+```bash
+git diff main...HEAD > change.diff
+
+terraguard-agentshield risk diff change.diff \
+  --format json \
+  --output agentshield-risk.json \
+  --fail-on high
+```
+
 ## Publish PR Comment
 
 ```bash

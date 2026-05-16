@@ -39,6 +39,11 @@ from terraguard_agentshield.policy_signing import (
     write_signature,
 )
 from terraguard_agentshield.policy_registry import PolicyRegistry
+from terraguard_agentshield.risk import (
+    SemanticRiskClassifier,
+    render_text_summary,
+    should_fail_for_risk,
+)
 from terraguard_agentshield.runtime import RuntimeGuard
 
 console = Console()
@@ -47,10 +52,12 @@ agent_app = typer.Typer(help="AI agent runtime commands.")
 evidence_app = typer.Typer(help="Evidence export commands.")
 hooks_app = typer.Typer(help="AI agent hook adapters.")
 policy_app = typer.Typer(help="Policy registry commands.")
+risk_app = typer.Typer(help="Semantic risk classification commands.")
 app.add_typer(agent_app, name="agent")
 app.add_typer(evidence_app, name="evidence")
 app.add_typer(hooks_app, name="hooks")
 app.add_typer(policy_app, name="policy")
+app.add_typer(risk_app, name="risk")
 
 
 @app.command()
@@ -432,6 +439,48 @@ def publish_servicenow(
 
     console.print(f"[red]ERROR[/red] ServiceNow evidence publish failed: {result.error}")
     raise typer.Exit(code=1)
+
+
+@risk_app.command("diff")
+def classify_diff(
+    diff_path: Annotated[
+        Path | None,
+        typer.Argument(help="Unified diff file. Reads stdin when omitted."),
+    ] = None,
+    format: Annotated[str, typer.Option(help="Output format: text or json.")] = "text",
+    output: Annotated[Path | None, typer.Option(help="Optional JSON output path.")] = None,
+    fail_on: Annotated[
+        str | None,
+        typer.Option(help="Fail when max risk is at or above: low, medium, high, critical."),
+    ] = None,
+) -> None:
+    """Classify semantic risk in a source or IaC unified diff."""
+    if diff_path:
+        diff_text = diff_path.read_text(encoding="utf-8")
+    else:
+        diff_text = sys.stdin.read()
+
+    summary = SemanticRiskClassifier().classify_diff(diff_text)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(summary.to_json() + "\n", encoding="utf-8")
+
+    if format == "json":
+        console.print(summary.to_json())
+    elif format == "text":
+        console.print(render_text_summary(summary))
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=1)
+
+    if fail_on:
+        try:
+            should_fail = should_fail_for_risk(summary, fail_on)
+        except ValueError as exc:
+            console.print(f"[red]ERROR[/red] {exc}")
+            raise typer.Exit(code=1) from exc
+        if should_fail:
+            raise typer.Exit(code=1)
 
 
 @policy_app.command("list")

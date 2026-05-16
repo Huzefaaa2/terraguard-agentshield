@@ -25,6 +25,7 @@ Core governance:
 - Codex and Copilot governance examples
 - Retryable webhook delivery plus Splunk/Sentinel receiver examples
 - Jira and ServiceNow evidence routing
+- Semantic risk classification for source and IaC diffs
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -52,6 +53,7 @@ CLI:
 - `terraguard-agentshield policy verify`
 - `terraguard-agentshield policy list`
 - `terraguard-agentshield policy describe`
+- `terraguard-agentshield risk diff`
 
 Documentation:
 
@@ -69,13 +71,14 @@ Documentation:
 ### Known Limitations
 
 - Policy inheritance is a roadmap item.
-- Semantic risk analysis is roadmap work.
+- Advanced semantic risk routing is roadmap work.
 
 ### Recommended Next Release
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Semantic risk classification
+- Signed evidence bundle format
+- Policy inheritance
 
 ### Verification
 
@@ -83,7 +86,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 37 passed
+pytest -q -> 42 passed
 ```
 
 ### Links
