@@ -18,6 +18,8 @@ Implemented:
 - Webhook evidence sender with optional HMAC signing
 - Detached policy signing and verification
 - Attestation validation for protected branch checks
+- GitHub PR comment publishing
+- Codex and Copilot governance examples
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -25,7 +27,6 @@ Implemented:
 
 Not yet implemented:
 
-- GitHub Copilot/Codex workflow adapters
 - Native Jira/ServiceNow integrations
 - Policy inheritance
 - Semantic risk engine
@@ -78,6 +79,7 @@ terraguard-agentshield evidence send-webhook <session-id> --url https://security
 terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml
 terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
 terraguard-agentshield evidence validate --audit-dir .terraguard/audit
+terraguard-agentshield evidence publish-github-comment --audit-dir .terraguard/audit
 ```
 
 ## Policy Packs
@@ -95,15 +97,15 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 28 passed
+pytest -q -> 31 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.2 Multi-Agent Integrations**:
 
-1. Add Codex/Codex CLI governance examples.
-2. Add examples for Copilot PR evidence workflows.
-3. Add retry controls and SIEM receiver examples for webhook delivery.
-4. Add asymmetric signing option for policy bundles.
-5. Add semantic risk classification for source and IaC diffs.
+1. Add retry controls and SIEM receiver examples for webhook delivery.
+2. Add asymmetric signing option for policy bundles.
+3. Add semantic risk classification for source and IaC diffs.
+4. Add Jira/ServiceNow evidence routing.
+5. Add a lightweight enterprise policy management API.

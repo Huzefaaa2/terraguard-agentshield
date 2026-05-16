@@ -81,3 +81,11 @@ terraguard-agentshield evidence validate \
   --audit-dir .terraguard/audit \
   --fail-on block,require_approval
 ```
+
+## Publish PR Comment
+
+```bash
+terraguard-agentshield evidence publish-github-comment \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit
+```

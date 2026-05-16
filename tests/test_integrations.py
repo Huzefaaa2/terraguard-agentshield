@@ -5,6 +5,7 @@ from urllib.request import Request
 from terraguard_agentshield.audit import AuditAction, SessionAudit
 from terraguard_agentshield.integrations import (
     CommandInterceptor,
+    GitHubPRCommentPublisher,
     GitHubPRAttestationExporter,
     WebhookExporter,
 )
@@ -119,3 +120,75 @@ def test_webhook_exporter_returns_false_on_delivery_error(monkeypatch) -> None:
     audit = SessionAudit(session_id="test-005", tool="claude-code", repo=Path("."))
 
     assert not WebhookExporter("https://example.com/events").export(audit)
+
+
+def test_github_pr_comment_publisher_creates_comment(monkeypatch) -> None:
+    requests: list[Request] = []
+
+    class Response:
+        def __init__(self, payload: object) -> None:
+            self.payload = payload
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+        def read(self) -> bytes:
+            import json
+
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(request: Request, timeout: int) -> Response:
+        requests.append(request)
+        if request.get_method() == "GET":
+            return Response([])
+        return Response({"html_url": "https://github.example/comment/1"})
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = GitHubPRCommentPublisher("token", api_url="https://api.github.test").publish(
+        "owner/repo", 12, "body"
+    )
+
+    assert result.success
+    assert result.action == "created"
+    assert [request.get_method() for request in requests] == ["GET", "POST"]
+
+
+def test_github_pr_comment_publisher_updates_existing_comment(monkeypatch) -> None:
+    requests: list[Request] = []
+
+    class Response:
+        def __init__(self, payload: object) -> None:
+            self.payload = payload
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+        def read(self) -> bytes:
+            import json
+
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(request: Request, timeout: int) -> Response:
+        requests.append(request)
+        if request.get_method() == "GET":
+            return Response(
+                [{"id": 99, "body": "<!-- terraguard-agentshield-attestation -->\nold"}]
+            )
+        return Response({"html_url": "https://github.example/comment/99"})
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    result = GitHubPRCommentPublisher("token", api_url="https://api.github.test").publish(
+        "owner/repo", 12, "body"
+    )
+
+    assert result.success
+    assert result.action == "updated"
+    assert [request.get_method() for request in requests] == ["GET", "PATCH"]

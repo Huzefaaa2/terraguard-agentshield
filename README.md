@@ -133,6 +133,16 @@ terraguard-agentshield evidence send-webhook <session-id> \
   --url https://security.example.com/agentshield/events
 ```
 
+Publish or update a GitHub PR attestation comment:
+
+```bash
+terraguard-agentshield evidence publish-github-comment \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit \
+  --repo owner/repo \
+  --pr-number 123
+```
+
 Sign and verify a policy bundle:
 
 ```bash
@@ -209,6 +219,7 @@ More detail:
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Attestation Validation](docs/attestation-validation.md)
+- [Codex and Copilot Governance](docs/codex-copilot-governance.md)
 - [Policy Authoring](docs/policy-authoring.md)
 - [Enterprise Adoption](docs/enterprise-adoption.md)
 - [Case Studies](docs/case-studies.md)
@@ -231,12 +242,13 @@ Implemented:
 - Webhook evidence sender with optional HMAC signing
 - Detached policy signatures with HMAC-SHA256
 - CI attestation validation for protected branch checks
+- GitHub PR comment publishing for AgentShield reports
+- Codex and Copilot governance examples
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- GitHub Copilot/Codex CI attestation examples
 - Semantic diff/risk engine
 
 ## References

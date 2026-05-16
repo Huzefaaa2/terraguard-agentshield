@@ -21,6 +21,8 @@ Core governance:
 - Webhook evidence sender with optional HMAC signing
 - Detached policy signing and verification
 - Attestation validation for protected branch checks
+- GitHub PR comment publishing
+- Codex and Copilot governance examples
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -40,6 +42,7 @@ CLI:
 - `terraguard-agentshield hooks claude`
 - `terraguard-agentshield evidence send-webhook`
 - `terraguard-agentshield evidence validate`
+- `terraguard-agentshield evidence publish-github-comment`
 - `terraguard-agentshield policy sign`
 - `terraguard-agentshield policy verify`
 - `terraguard-agentshield policy list`
@@ -60,7 +63,6 @@ Documentation:
 
 ### Known Limitations
 
-- Codex and Copilot workflow adapters are not implemented yet.
 - Jira and ServiceNow integrations are roadmap items.
 - Policy inheritance is a roadmap item.
 - Semantic risk analysis is roadmap work.
@@ -69,7 +71,6 @@ Documentation:
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Codex/Copilot PR evidence examples
 - Retryable webhook delivery and SIEM receiver examples
 - Asymmetric policy-signing option
 
@@ -79,7 +80,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 28 passed
+pytest -q -> 31 passed
 ```
 
 ### Links

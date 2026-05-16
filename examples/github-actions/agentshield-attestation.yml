@@ -30,6 +30,14 @@ jobs:
             echo "No AgentShield audit found"
             exit 1
           fi
+      - name: Publish AgentShield PR comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SESSION_ID=$(ls -t .terraguard/audit/session-*.json | head -1 | sed 's/.*session-//;s/\.json//')
+          terraguard-agentshield evidence publish-github-comment \
+            --session-id "$SESSION_ID" \
+            --audit-dir .terraguard/audit
       - uses: actions/upload-artifact@v4
         with:
           name: agentshield-attestation

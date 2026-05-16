@@ -3,7 +3,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from terraguard_agentshield.audit import AuditAction, SessionAudit
-from terraguard_agentshield.cli import app
+from terraguard_agentshield.cli import _github_event_pr_number, app
 from terraguard_agentshield.evidence import (
     latest_audit_file,
     load_audit_for_validation,
@@ -79,3 +79,11 @@ def test_validate_attestation_cli_fails_on_block(tmp_path: Path) -> None:
 
     assert result.exit_code == 1
     assert "Audit contains 1 block action" in result.output
+
+
+def test_github_event_pr_number(monkeypatch, tmp_path: Path) -> None:
+    event_path = tmp_path / "event.json"
+    event_path.write_text('{"pull_request":{"number":42}}', encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+
+    assert _github_event_pr_number() == 42

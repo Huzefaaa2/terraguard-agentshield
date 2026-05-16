@@ -172,7 +172,27 @@ terraguard-agentshield evidence validate \
   --output agentshield-validation.json
 ```
 
-## 11. GitHub Actions Example
+## 11. Publish PR Attestation Comment
+
+```bash
+terraguard-agentshield evidence publish-github-comment \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit \
+  --repo owner/repo \
+  --pr-number 123
+```
+
+In GitHub Actions, `GITHUB_REPOSITORY`, `GITHUB_EVENT_PATH`, and `GITHUB_TOKEN` are used automatically.
+
+## 12. Codex and Copilot Setup
+
+For Codex, copy `examples/codex/AGENTS.md` into the repo root.
+
+For GitHub Copilot, copy `examples/copilot/copilot-instructions.md` to `.github/copilot-instructions.md`.
+
+Then require `examples/github-actions/agentshield-required-check.yml` in branch protection.
+
+## 13. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -208,7 +228,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 12. Pilot Rollout Model
+## 14. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |
@@ -218,7 +238,7 @@ jobs:
 | Week 4 | Require approval | Gate IAM, security, workflow, and production-impacting changes |
 | Week 5+ | PR attestation | Make AgentShield evidence part of protected branch review |
 
-## 13. Enterprise Operating Model
+## 15. Enterprise Operating Model
 
 Recommended controls:
 

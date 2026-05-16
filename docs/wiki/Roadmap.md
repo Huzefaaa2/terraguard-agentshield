@@ -10,6 +10,8 @@ Implemented:
 - Claude Code `PreToolUse` hook adapter
 - Detached policy signatures
 - Attestation validation for protected branch checks
+- GitHub PR comment publishing
+- Codex and Copilot governance examples
 - JSON session audit
 - PR markdown attestation
 - CLI workflow

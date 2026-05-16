@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from terraguard_agentshield.audit import SessionAudit, create_attestation_markdown
 from terraguard_agentshield.runtime import RuntimeGuard
@@ -117,3 +118,93 @@ class WebhookExporter:
                 return response.status in (200, 201, 202, 204)
         except (urllib.error.URLError, TimeoutError, OSError):
             return False
+
+
+@dataclass(frozen=True)
+class GitHubCommentResult:
+    success: bool
+    action: str
+    comment_url: str | None = None
+    error: str | None = None
+
+
+class GitHubPRCommentPublisher:
+    def __init__(
+        self,
+        token: str,
+        api_url: str = "https://api.github.com",
+        marker: str = "<!-- terraguard-agentshield-attestation -->",
+    ) -> None:
+        self.token = token
+        self.api_url = api_url.rstrip("/")
+        self.marker = marker
+
+    def publish(self, repo: str, pr_number: int, body: str) -> GitHubCommentResult:
+        comment_body = f"{self.marker}\n\n{body}"
+        try:
+            existing = self._find_existing_comment(repo, pr_number)
+            if existing:
+                comment_id = existing["id"]
+                payload = self._request(
+                    "PATCH",
+                    f"/repos/{repo}/issues/comments/{comment_id}",
+                    {"body": comment_body},
+                )
+                return GitHubCommentResult(
+                    success=True,
+                    action="updated",
+                    comment_url=payload.get("html_url"),
+                )
+
+            payload = self._request(
+                "POST",
+                f"/repos/{repo}/issues/{pr_number}/comments",
+                {"body": comment_body},
+            )
+            return GitHubCommentResult(
+                success=True,
+                action="created",
+                comment_url=payload.get("html_url"),
+            )
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            return GitHubCommentResult(success=False, action="failed", error=str(exc))
+
+    def _find_existing_comment(self, repo: str, pr_number: int) -> dict[str, Any] | None:
+        comments = self._request(
+            "GET",
+            f"/repos/{repo}/issues/{pr_number}/comments?per_page=100",
+            None,
+        )
+        if not isinstance(comments, list):
+            return None
+        for comment in comments:
+            if isinstance(comment, dict) and self.marker in str(comment.get("body", "")):
+                return comment
+        return None
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        payload: dict[str, Any] | None,
+    ) -> Any:
+        data = None
+        if payload is not None:
+            data = json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            f"{self.api_url}{path}",
+            data=data,
+            method=method,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {self.token}",
+                "Content-Type": "application/json",
+                "User-Agent": "terraguard-agentshield",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=10) as response:
+            response_data = response.read().decode("utf-8")
+            if not response_data:
+                return {}
+            return json.loads(response_data)

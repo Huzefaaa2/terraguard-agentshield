@@ -23,6 +23,8 @@ Status: **Implemented in this repo**
 - Webhook evidence sender with optional HMAC signing
 - Detached policy signatures
 - Attestation validation for protected branch checks
+- GitHub PR comment publishing
+- Codex and Copilot governance examples
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -36,8 +38,8 @@ Status: **Implemented in this repo**
 Recommended next implementation phase.
 
 - Hardened Claude Code hook packaging and cross-platform examples
-- Codex/Codex CLI wrapper examples using `AGENTS.md`
-- GitHub Copilot cloud-agent PR attestation workflow
+- Hardened Codex/Codex CLI workflow examples
+- Hardened GitHub Copilot cloud-agent PR attestation workflow
 - GitHub Actions examples for required AgentShield checks
 - Documentation for safe pilot rollout in regulated repos
 

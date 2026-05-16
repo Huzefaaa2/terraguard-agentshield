@@ -111,5 +111,6 @@ flowchart LR
 | Claude Code hook adapter | Implemented |
 | Policy signing | Implemented |
 | Attestation validation | Implemented |
+| GitHub PR comment publishing | Implemented |
 | GitHub Action attestation validation | Example provided |
 | SIEM/GRC exporters | Roadmap |

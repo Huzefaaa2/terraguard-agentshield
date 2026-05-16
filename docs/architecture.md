@@ -143,6 +143,7 @@ Use cases:
 | Claude Code hook adapter | `PreToolUse` policy enforcement for Bash, files, and MCP tools | Implemented |
 | GitHub PR attestation | Attach AI governance report to PR | Partially implemented |
 | CI policy check | Require attestation and policy pack validation in GitHub Actions | Implemented |
+| GitHub PR comment publishing | Create or update reviewer-facing AgentShield attestation comments | Implemented |
 | Enterprise evidence export | Send audit to SIEM/GRC/ServiceNow/Jira | Roadmap |
 
 ## Reference Architecture

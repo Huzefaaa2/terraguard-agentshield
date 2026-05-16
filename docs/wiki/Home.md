@@ -43,6 +43,7 @@ Implemented:
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
 - [Attestation Validation](Attestation-Validation)
+- [Codex and Copilot Governance](Codex-Copilot-Governance)
 - [Policy Authoring](Policy-Authoring)
 - [Threat Model](Threat-Model)
 - [Enterprise Adoption](Enterprise-Adoption)

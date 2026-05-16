@@ -20,6 +20,7 @@ from terraguard_agentshield.evidence import (
 from terraguard_agentshield.hooks import ClaudeHookProcessor
 from terraguard_agentshield.integrations import (
     CommandInterceptor,
+    GitHubPRCommentPublisher,
     GitHubPRAttestationExporter,
     WebhookExporter,
 )
@@ -280,6 +281,51 @@ def validate_evidence(
         raise typer.Exit(code=1)
 
 
+@evidence_app.command("publish-github-comment")
+def publish_github_comment(
+    session_id: Annotated[str | None, typer.Option(help="Session ID. Defaults to latest audit.")] = None,
+    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
+    repo: Annotated[str | None, typer.Option(help="GitHub repository as owner/name.")] = None,
+    pr_number: Annotated[int | None, typer.Option(help="Pull request number.")] = None,
+    token: Annotated[str | None, typer.Option(help="GitHub token. Prefer env var in CI.")] = None,
+    token_env: Annotated[str, typer.Option(help="Environment variable containing GitHub token.")] = "GITHUB_TOKEN",
+    api_url: Annotated[str, typer.Option(help="GitHub API URL.")] = "https://api.github.com",
+) -> None:
+    """Create or update a GitHub PR comment with AgentShield attestation."""
+    try:
+        audit = load_audit_for_validation(audit_dir, session_id=session_id)
+    except FileNotFoundError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    github_repo = repo or os.environ.get("GITHUB_REPOSITORY")
+    if not github_repo:
+        console.print("[red]ERROR[/red] GitHub repository missing. Set --repo or GITHUB_REPOSITORY.")
+        raise typer.Exit(code=1)
+
+    github_pr_number = pr_number or _github_event_pr_number()
+    if github_pr_number is None:
+        console.print("[red]ERROR[/red] Pull request number missing. Set --pr-number or GITHUB_EVENT_PATH.")
+        raise typer.Exit(code=1)
+
+    github_token = token or os.environ.get(token_env)
+    if not github_token:
+        console.print(f"[red]ERROR[/red] GitHub token missing. Set {token_env}.")
+        raise typer.Exit(code=1)
+
+    body = GitHubPRAttestationExporter.export_comment(audit)
+    publisher = GitHubPRCommentPublisher(github_token, api_url=api_url)
+    result = publisher.publish(github_repo, github_pr_number, body)
+    if result.success:
+        console.print(f"[green]OK[/green] GitHub PR comment {result.action}")
+        if result.comment_url:
+            console.print(result.comment_url)
+        return
+
+    console.print(f"[red]ERROR[/red] GitHub PR comment failed: {result.error}")
+    raise typer.Exit(code=1)
+
+
 @policy_app.command("list")
 def list_policies() -> None:
     """List available policy packs."""
@@ -354,3 +400,21 @@ def verify_policy_pack(
 
 def main() -> None:
     app()
+
+
+def _github_event_pr_number() -> int | None:
+    event_path = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_path:
+        return None
+    path = Path(event_path)
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if isinstance(payload.get("pull_request"), dict):
+        number = payload["pull_request"].get("number")
+        return int(number) if number is not None else None
+    number = payload.get("number")
+    return int(number) if number is not None else None
