@@ -71,9 +71,15 @@ terraguard-agentshield evidence send-webhook <session-id> \
 ## Sign Policy
 
 ```bash
-export TERRAGUARD_AGENTSHIELD_POLICY_SECRET="replace-me"
-terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml
-terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
+terraguard-agentshield policy keygen \
+  --private-key .terraguard/keys/policy-private.pem \
+  --public-key .terraguard/keys/policy-public.pem
+
+terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml \
+  --private-key .terraguard/keys/policy-private.pem
+
+terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml \
+  --public-key .terraguard/keys/policy-public.pem
 ```
 
 ## Validate Evidence

@@ -19,7 +19,7 @@ Core governance:
 - Session-based JSON audit trail
 - PR-ready markdown attestation
 - Webhook evidence sender with optional HMAC signing
-- Detached policy signing and verification
+- Detached Ed25519 and HMAC policy signing and verification
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
@@ -47,6 +47,7 @@ CLI:
 - `terraguard-agentshield evidence publish-github-comment`
 - `terraguard-agentshield evidence publish-jira`
 - `terraguard-agentshield evidence publish-servicenow`
+- `terraguard-agentshield policy keygen`
 - `terraguard-agentshield policy sign`
 - `terraguard-agentshield policy verify`
 - `terraguard-agentshield policy list`
@@ -74,7 +75,6 @@ Documentation:
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Asymmetric policy-signing option
 - Semantic risk classification
 
 ### Verification
@@ -83,7 +83,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 34 passed
+pytest -q -> 37 passed
 ```
 
 ### Links

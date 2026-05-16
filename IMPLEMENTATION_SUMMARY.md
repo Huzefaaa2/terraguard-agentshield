@@ -16,12 +16,13 @@ Implemented:
 - Session audit JSON
 - PR-ready markdown attestation
 - Webhook evidence sender with optional HMAC signing
-- Detached policy signing and verification
+- Detached Ed25519 and HMAC policy signing and verification
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
 - Retryable webhook delivery plus Splunk/Sentinel receiver examples
 - Jira and ServiceNow evidence routing
+- Asymmetric policy bundle signing for CI verification
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -77,6 +78,7 @@ terraguard-agentshield agent check-mcp github-enterprise --capability read_repo
 terraguard-agentshield hooks claude --policy-pack banking-regulated-ai
 terraguard-agentshield agent attest <session-id> --format markdown
 terraguard-agentshield evidence send-webhook <session-id> --url https://security.example.com/events
+terraguard-agentshield policy keygen --private-key private.pem --public-key public.pem
 terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml
 terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
 terraguard-agentshield evidence validate --audit-dir .terraguard/audit
@@ -100,15 +102,15 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 34 passed
+pytest -q -> 37 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.2 Enterprise Evidence Routing**:
 
-1. Add asymmetric signing option for policy bundles.
-2. Add semantic risk classification for source and IaC diffs.
-3. Add a lightweight enterprise policy management API.
-4. Add deployment hardening examples for containerized receivers.
-5. Add policy inheritance for enterprise -> business unit -> repository.
+1. Add semantic risk classification for source and IaC diffs.
+2. Add a lightweight enterprise policy management API.
+3. Add deployment hardening examples for containerized receivers.
+4. Add policy inheritance for enterprise -> business unit -> repository.
+5. Add signed evidence bundle format.

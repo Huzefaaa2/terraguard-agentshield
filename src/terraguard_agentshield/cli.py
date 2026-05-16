@@ -27,10 +27,15 @@ from terraguard_agentshield.integrations import (
     WebhookExporter,
 )
 from terraguard_agentshield.policy_signing import (
+    ED25519_SIGNATURE_ALGORITHM,
+    HMAC_SIGNATURE_ALGORITHM,
+    generate_ed25519_key_pair,
     load_policy_file,
     read_signature,
     sign_policy,
+    sign_policy_asymmetric,
     verify_policy_signature,
+    verify_policy_signature_asymmetric,
     write_signature,
 )
 from terraguard_agentshield.policy_registry import PolicyRegistry
@@ -462,18 +467,30 @@ def sign_policy_pack(
     signer: Annotated[str, typer.Option(help="Signer identity for audit metadata.")] = "terraguard-agentshield",
     secret: Annotated[str | None, typer.Option(help="Signing secret. Prefer env var in CI.")] = None,
     secret_env: Annotated[str, typer.Option(help="Environment variable containing signing secret.")] = "TERRAGUARD_AGENTSHIELD_POLICY_SECRET",
+    private_key: Annotated[Path | None, typer.Option(help="Ed25519 private key PEM for asymmetric signing.")] = None,
+    key_id: Annotated[str | None, typer.Option(help="Optional key identifier to embed in the signature.")] = None,
 ) -> None:
     """Create a detached signature for a policy bundle."""
-    signing_secret = secret or os.environ.get(secret_env)
-    if not signing_secret:
-        console.print(f"[red]ERROR[/red] Signing secret missing. Set {secret_env}.")
-        raise typer.Exit(code=1)
-
     policy = load_policy_file(policy_path)
-    signature = sign_policy(policy, signing_secret, signer=signer)
+    if private_key:
+        signature = sign_policy_asymmetric(
+            policy,
+            private_key.read_bytes(),
+            signer=signer,
+            key_id=key_id,
+        )
+    else:
+        signing_secret = secret or os.environ.get(secret_env)
+        if not signing_secret:
+            console.print(f"[red]ERROR[/red] Signing secret missing. Set {secret_env}.")
+            raise typer.Exit(code=1)
+        signature = sign_policy(policy, signing_secret, signer=signer)
+
     signature_path = output or policy_path.with_suffix(policy_path.suffix + ".sig")
     write_signature(signature, signature_path)
-    console.print(f"[green]OK[/green] Policy signature written: {signature_path}")
+    console.print(
+        f"[green]OK[/green] {signature.algorithm} policy signature written: {signature_path}"
+    )
 
 
 @policy_app.command("verify")
@@ -482,23 +499,48 @@ def verify_policy_pack(
     signature: Annotated[Path | None, typer.Option(help="Signature JSON path.")] = None,
     secret: Annotated[str | None, typer.Option(help="Verification secret. Prefer env var in CI.")] = None,
     secret_env: Annotated[str, typer.Option(help="Environment variable containing verification secret.")] = "TERRAGUARD_AGENTSHIELD_POLICY_SECRET",
+    public_key: Annotated[Path | None, typer.Option(help="Ed25519 public key PEM for asymmetric verification.")] = None,
 ) -> None:
     """Verify a detached policy bundle signature."""
-    verification_secret = secret or os.environ.get(secret_env)
-    if not verification_secret:
-        console.print(f"[red]ERROR[/red] Verification secret missing. Set {secret_env}.")
-        raise typer.Exit(code=1)
-
     policy = load_policy_file(policy_path)
     signature_path = signature or policy_path.with_suffix(policy_path.suffix + ".sig")
     policy_signature = read_signature(signature_path)
-    valid, reason = verify_policy_signature(policy, policy_signature, verification_secret)
+    if policy_signature.algorithm == ED25519_SIGNATURE_ALGORITHM:
+        if not public_key:
+            console.print("[red]ERROR[/red] Public key missing. Set --public-key.")
+            raise typer.Exit(code=1)
+        valid, reason = verify_policy_signature_asymmetric(
+            policy, policy_signature, public_key.read_bytes()
+        )
+    elif policy_signature.algorithm == HMAC_SIGNATURE_ALGORITHM:
+        verification_secret = secret or os.environ.get(secret_env)
+        if not verification_secret:
+            console.print(f"[red]ERROR[/red] Verification secret missing. Set {secret_env}.")
+            raise typer.Exit(code=1)
+        valid, reason = verify_policy_signature(
+            policy, policy_signature, verification_secret
+        )
+    else:
+        valid, reason = False, f"Unsupported signature algorithm: {policy_signature.algorithm}"
+
     if valid:
         console.print(f"[green]OK[/green] {reason}")
         return
 
     console.print(f"[red]ERROR[/red] {reason}")
     raise typer.Exit(code=1)
+
+
+@policy_app.command("keygen")
+def generate_policy_key_pair(
+    private_key: Annotated[Path, typer.Option(help="Private key output path.")] = Path("agentshield-policy-private.pem"),
+    public_key: Annotated[Path, typer.Option(help="Public key output path.")] = Path("agentshield-policy-public.pem"),
+) -> None:
+    """Generate an Ed25519 policy signing key pair."""
+    key_id = generate_ed25519_key_pair(private_key, public_key)
+    console.print(f"[green]OK[/green] Policy signing key pair generated. key_id={key_id}")
+    console.print(f"[dim]Private key: {private_key}[/dim]")
+    console.print(f"[dim]Public key: {public_key}[/dim]")
 
 
 def main() -> None:

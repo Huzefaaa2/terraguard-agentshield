@@ -162,10 +162,16 @@ terraguard-agentshield evidence publish-servicenow <record-sys-id> \
 Sign and verify a policy bundle:
 
 ```bash
-export TERRAGUARD_AGENTSHIELD_POLICY_SECRET="replace-me"
+terraguard-agentshield policy keygen \
+  --private-key .terraguard/keys/policy-private.pem \
+  --public-key .terraguard/keys/policy-public.pem
+
 terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml \
+  --private-key .terraguard/keys/policy-private.pem \
   --signer platform-security
-terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
+
+terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml \
+  --public-key .terraguard/keys/policy-public.pem
 ```
 
 ## Policy Packs
@@ -258,12 +264,13 @@ Implemented:
 - Session audit JSON
 - PR-ready markdown attestation
 - Webhook evidence sender with optional HMAC signing
-- Detached policy signatures with HMAC-SHA256
+- Detached policy signatures with Ed25519 and HMAC-SHA256
 - CI attestation validation for protected branch checks
 - GitHub PR comment publishing for AgentShield reports
 - Codex and Copilot governance examples
 - Retryable webhook delivery plus Splunk/Sentinel receiver examples
 - Jira and ServiceNow evidence routing
+- Asymmetric policy bundle signing for CI verification
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 

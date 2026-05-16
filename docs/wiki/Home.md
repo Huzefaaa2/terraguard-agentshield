@@ -15,7 +15,7 @@ Implemented:
 - Runtime policy decisions for file access
 - Command allow/block/approval decisions
 - MCP server allowlist and capability decisions
-- Detached policy signing and verification
+- Detached Ed25519 and HMAC policy signing and verification
 - Attestation validation for protected branch checks
 - Protected branch Git decision model
 - Built-in policy packs

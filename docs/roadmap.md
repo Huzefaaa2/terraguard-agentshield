@@ -21,12 +21,13 @@ Status: **Implemented in this repo**
 - Session audit JSON
 - PR markdown attestation
 - Webhook evidence sender with optional HMAC signing
-- Detached policy signatures
+- Detached policy signatures with Ed25519 and HMAC-SHA256
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
 - Retryable webhook delivery and SIEM receiver examples
 - Jira and ServiceNow evidence routing
+- Asymmetric policy bundle signing
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -53,7 +54,6 @@ Recommended next implementation phase.
 
 ## v0.4: Policy Governance
 
-- Asymmetric policy signing option
 - Organization policy pack templates
 - Policy inheritance: enterprise -> business unit -> repo
 - Policy test harness

@@ -8,12 +8,13 @@ Implemented:
 - Built-in policy packs
 - File, command, Git, and MCP decisions
 - Claude Code `PreToolUse` hook adapter
-- Detached policy signatures
+- Detached policy signatures with Ed25519 and HMAC-SHA256
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
 - Retryable webhook delivery and SIEM receiver examples
 - Jira and ServiceNow evidence routing
+- Asymmetric policy bundle signing
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
@@ -32,7 +33,6 @@ Implemented:
 
 ## v0.4 Policy Governance
 
-- Policy signing
 - Policy inheritance
 - Policy test harness
 - Compliance control mappings
