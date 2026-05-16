@@ -101,6 +101,18 @@ terraguard-agentshield risk diff change.diff \
   --fail-on high
 ```
 
+## Create Evidence Bundle
+
+```bash
+terraguard-agentshield evidence bundle \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit \
+  --risk agentshield-risk.json \
+  --validation agentshield-validation.json \
+  --private-key .terraguard/keys/evidence-private.pem \
+  --output agentshield-evidence-bundle.json
+```
+
 ## Publish PR Comment
 
 ```bash

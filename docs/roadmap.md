@@ -29,6 +29,7 @@ Status: **Implemented in this repo**
 - Jira and ServiceNow evidence routing
 - Asymmetric policy bundle signing
 - Semantic risk classification for source and IaC diffs
+- Signed evidence bundle format
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -50,7 +51,6 @@ Recommended next implementation phase.
 ## v0.3: Enterprise Evidence and Approval
 
 - Policy decision summary by risk and control family
-- Signed evidence bundle format
 - Deployment hardening examples for containerized receivers
 
 ## v0.4: Policy Governance

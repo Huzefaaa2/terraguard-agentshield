@@ -13,8 +13,11 @@ from rich.json import JSON
 from terraguard_agentshield.agent import AgentSessionManager
 from terraguard_agentshield.audit import AuditAction, SessionAudit
 from terraguard_agentshield.evidence import (
+    create_evidence_bundle,
     load_audit_for_validation,
+    read_evidence_bundle,
     validate_attestation,
+    verify_evidence_bundle,
     write_validation_result,
 )
 from terraguard_agentshield.hooks import ClaudeHookProcessor
@@ -301,6 +304,57 @@ def validate_evidence(
 
     if output:
         write_validation_result(result, output)
+
+    console.print(json.dumps(result.to_dict(), indent=2))
+    if not result.valid:
+        raise typer.Exit(code=1)
+
+
+@evidence_app.command("bundle")
+def create_bundle(
+    session_id: Annotated[str | None, typer.Option(help="Session ID. Defaults to latest audit.")] = None,
+    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
+    private_key: Annotated[Path, typer.Option(help="Ed25519 private key PEM for bundle signing.")] = Path("agentshield-evidence-private.pem"),
+    output: Annotated[Path | None, typer.Option(help="Evidence bundle JSON output path.")] = None,
+    signer: Annotated[str, typer.Option(help="Signer identity for evidence metadata.")] = "terraguard-agentshield",
+    risk: Annotated[Path | None, typer.Option(help="Optional risk JSON file from risk diff.")] = None,
+    policy_signature: Annotated[Path | None, typer.Option(help="Optional policy signature JSON file.")] = None,
+    validation: Annotated[Path | None, typer.Option(help="Optional attestation validation JSON file.")] = None,
+    metadata: Annotated[list[str] | None, typer.Option(help="Additional metadata as key=value.")] = None,
+) -> None:
+    """Create and sign an immutable-style AgentShield evidence bundle."""
+    try:
+        audit = load_audit_for_validation(audit_dir, session_id=session_id)
+    except FileNotFoundError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    bundle = create_evidence_bundle(
+        audit,
+        private_key.read_bytes(),
+        signer=signer,
+        risk=_read_optional_json(risk),
+        policy_signature=_read_optional_json(policy_signature),
+        validation=_read_optional_json(validation),
+        metadata=_parse_metadata(metadata or []),
+    )
+    bundle_path = output or audit_dir / f"evidence-{bundle.bundle_id}.json"
+    bundle.write(bundle_path)
+    console.print(f"[green]OK[/green] Evidence bundle written: {bundle_path}")
+
+
+@evidence_app.command("verify-bundle")
+def verify_bundle(
+    bundle_path: Annotated[Path, typer.Argument(help="Evidence bundle JSON path.")],
+    public_key: Annotated[Path, typer.Option(help="Ed25519 public key PEM for verification.")],
+    output: Annotated[Path | None, typer.Option(help="Optional verification JSON output path.")] = None,
+) -> None:
+    """Verify a signed AgentShield evidence bundle."""
+    bundle = read_evidence_bundle(bundle_path)
+    result = verify_evidence_bundle(bundle, public_key.read_bytes())
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(result.to_dict(), indent=2) + "\n", encoding="utf-8")
 
     console.print(json.dumps(result.to_dict(), indent=2))
     if not result.valid:
@@ -612,3 +666,22 @@ def _github_event_pr_number() -> int | None:
         return int(number) if number is not None else None
     number = payload.get("number")
     return int(number) if number is not None else None
+
+
+def _read_optional_json(path: Path | None) -> dict[str, object] | None:
+    if not path:
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise typer.BadParameter(f"JSON file is not an object: {path}")
+    return payload
+
+
+def _parse_metadata(items: list[str]) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for item in items:
+        if "=" not in item:
+            raise typer.BadParameter(f"Metadata must be key=value: {item}")
+        key, value = item.split("=", 1)
+        parsed[key.strip()] = value.strip()
+    return parsed

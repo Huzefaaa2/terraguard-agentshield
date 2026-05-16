@@ -24,6 +24,7 @@ Implemented:
 - GitHub, Jira, and ServiceNow evidence publishing
 - Retryable SIEM webhook delivery
 - Semantic risk classification for source and IaC diffs
+- Signed evidence bundle format
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -48,6 +49,7 @@ Implemented:
 - [Attestation Validation](Attestation-Validation)
 - [Codex and Copilot Governance](Codex-Copilot-Governance)
 - [Risk Classification](Risk-Classification)
+- [Evidence Bundles](Evidence-Bundles)
 - [SIEM Integration](SIEM-Integration)
 - [Evidence Routing](Evidence-Routing)
 - [Policy Authoring](Policy-Authoring)

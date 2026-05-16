@@ -26,6 +26,7 @@ Core governance:
 - Retryable webhook delivery plus Splunk/Sentinel receiver examples
 - Jira and ServiceNow evidence routing
 - Semantic risk classification for source and IaC diffs
+- Signed evidence bundle format
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -48,6 +49,8 @@ CLI:
 - `terraguard-agentshield evidence publish-github-comment`
 - `terraguard-agentshield evidence publish-jira`
 - `terraguard-agentshield evidence publish-servicenow`
+- `terraguard-agentshield evidence bundle`
+- `terraguard-agentshield evidence verify-bundle`
 - `terraguard-agentshield policy keygen`
 - `terraguard-agentshield policy sign`
 - `terraguard-agentshield policy verify`
@@ -77,8 +80,8 @@ Documentation:
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Signed evidence bundle format
 - Policy inheritance
+- Enterprise policy management API
 
 ### Verification
 
@@ -86,7 +89,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 42 passed
+pytest -q -> 45 passed
 ```
 
 ### Links

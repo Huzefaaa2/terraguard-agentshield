@@ -136,6 +136,22 @@ terraguard-agentshield risk diff change.diff \
   --fail-on high
 ```
 
+Create and verify a signed evidence bundle:
+
+```bash
+terraguard-agentshield evidence bundle \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit \
+  --risk agentshield-risk.json \
+  --validation agentshield-validation.json \
+  --metadata change=CHG123 \
+  --private-key .terraguard/keys/evidence-private.pem \
+  --output agentshield-evidence-bundle.json
+
+terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json \
+  --public-key .terraguard/keys/evidence-public.pem
+```
+
 Send evidence to an enterprise webhook or SIEM endpoint:
 
 ```bash
@@ -254,6 +270,7 @@ More detail:
 - [Attestation Validation](docs/attestation-validation.md)
 - [Codex and Copilot Governance](docs/codex-copilot-governance.md)
 - [Risk Classification](docs/risk-classification.md)
+- [Evidence Bundles](docs/evidence-bundles.md)
 - [Evidence Routing](docs/evidence-routing.md)
 - [SIEM Integration](docs/siem-integration.md)
 - [Policy Authoring](docs/policy-authoring.md)
@@ -284,13 +301,14 @@ Implemented:
 - Jira and ServiceNow evidence routing
 - Asymmetric policy bundle signing for CI verification
 - Semantic risk classification for source and IaC diffs
+- Signed evidence bundle format
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Signed evidence bundle format
 - Policy inheritance
+- Enterprise policy management API
 
 ## References
 

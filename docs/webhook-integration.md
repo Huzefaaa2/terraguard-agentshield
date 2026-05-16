@@ -133,5 +133,4 @@ python examples/siem/sentinel/receiver.py
 
 ## Roadmap
 
-- Signed evidence bundle format
 - Deployment hardening examples for containerized receivers
