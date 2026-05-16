@@ -26,6 +26,7 @@ Status: **Implemented in this repo**
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
 - Retryable webhook delivery and SIEM receiver examples
+- Jira and ServiceNow evidence routing
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -46,11 +47,9 @@ Recommended next implementation phase.
 
 ## v0.3: Enterprise Evidence and Approval
 
-- Jira and ServiceNow receiver examples
-- GitHub PR comment publishing workflow
-- Jira and ServiceNow evidence mapping examples
 - Policy decision summary by risk and control family
 - Signed evidence bundle format
+- Deployment hardening examples for containerized receivers
 
 ## v0.4: Policy Governance
 

@@ -6,6 +6,7 @@ import json
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -274,3 +275,165 @@ class GitHubPRCommentPublisher:
             if not response_data:
                 return {}
             return json.loads(response_data)
+
+
+@dataclass(frozen=True)
+class EvidencePublishResult:
+    success: bool
+    target: str
+    action: str
+    url: str | None = None
+    error: str | None = None
+
+
+class JiraEvidencePublisher:
+    def __init__(
+        self,
+        base_url: str,
+        email: str | None = None,
+        api_token: str | None = None,
+        bearer_token: str | None = None,
+        timeout: int = 10,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.email = email
+        self.api_token = api_token
+        self.bearer_token = bearer_token
+        self.timeout = timeout
+
+    def publish_comment(
+        self, issue_key: str, audit: SessionAudit
+    ) -> EvidencePublishResult:
+        body = create_attestation_markdown(audit)
+        issue_path = urllib.parse.quote(issue_key, safe="")
+        target_url = f"{self.base_url}/rest/api/3/issue/{issue_path}/comment"
+        try:
+            self._request("POST", target_url, {"body": self._adf_document(body)})
+            return EvidencePublishResult(
+                success=True,
+                target=issue_key,
+                action="jira_comment_created",
+                url=f"{self.base_url}/browse/{issue_path}",
+            )
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            return EvidencePublishResult(
+                success=False,
+                target=issue_key,
+                action="jira_comment_failed",
+                error=str(exc),
+            )
+
+    def _request(self, method: str, url: str, payload: dict[str, Any]) -> Any:
+        data = json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            url,
+            data=data,
+            method=method,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "terraguard-agentshield",
+                **self._auth_headers(),
+            },
+        )
+        with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            response_data = response.read().decode("utf-8")
+            if not response_data:
+                return {}
+            return json.loads(response_data)
+
+    def _auth_headers(self) -> dict[str, str]:
+        if self.bearer_token:
+            return {"Authorization": f"Bearer {self.bearer_token}"}
+        if self.email and self.api_token:
+            import base64
+
+            raw = f"{self.email}:{self.api_token}".encode("utf-8")
+            token = base64.b64encode(raw).decode("ascii")
+            return {"Authorization": f"Basic {token}"}
+        raise ValueError("Jira credentials missing. Provide email/api token or bearer token.")
+
+    @staticmethod
+    def _adf_document(markdown: str) -> dict[str, Any]:
+        paragraphs: list[dict[str, Any]] = []
+        for line in markdown.splitlines():
+            text = line.strip() or " "
+            paragraphs.append(
+                {"type": "paragraph", "content": [{"type": "text", "text": text}]}
+            )
+        return {"type": "doc", "version": 1, "content": paragraphs}
+
+
+class ServiceNowEvidencePublisher:
+    def __init__(
+        self,
+        instance_url: str,
+        username: str | None = None,
+        password: str | None = None,
+        bearer_token: str | None = None,
+        timeout: int = 10,
+    ) -> None:
+        self.instance_url = instance_url.rstrip("/")
+        self.username = username
+        self.password = password
+        self.bearer_token = bearer_token
+        self.timeout = timeout
+
+    def publish_work_note(
+        self,
+        table: str,
+        sys_id: str,
+        audit: SessionAudit,
+        field: str = "work_notes",
+    ) -> EvidencePublishResult:
+        table_path = urllib.parse.quote(table, safe="")
+        sys_id_path = urllib.parse.quote(sys_id, safe="")
+        target_url = f"{self.instance_url}/api/now/table/{table_path}/{sys_id_path}"
+        payload = {field: create_attestation_markdown(audit)}
+        try:
+            self._request("PATCH", target_url, payload)
+            return EvidencePublishResult(
+                success=True,
+                target=f"{table}:{sys_id}",
+                action="servicenow_record_updated",
+                url=target_url,
+            )
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            return EvidencePublishResult(
+                success=False,
+                target=f"{table}:{sys_id}",
+                action="servicenow_update_failed",
+                error=str(exc),
+            )
+
+    def _request(self, method: str, url: str, payload: dict[str, Any]) -> Any:
+        data = json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            url,
+            data=data,
+            method=method,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "User-Agent": "terraguard-agentshield",
+                **self._auth_headers(),
+            },
+        )
+        with urllib.request.urlopen(request, timeout=self.timeout) as response:
+            response_data = response.read().decode("utf-8")
+            if not response_data:
+                return {}
+            return json.loads(response_data)
+
+    def _auth_headers(self) -> dict[str, str]:
+        if self.bearer_token:
+            return {"Authorization": f"Bearer {self.bearer_token}"}
+        if self.username and self.password:
+            import base64
+
+            raw = f"{self.username}:{self.password}".encode("utf-8")
+            token = base64.b64encode(raw).decode("ascii")
+            return {"Authorization": f"Basic {token}"}
+        raise ValueError(
+            "ServiceNow credentials missing. Provide username/password or bearer token."
+        )

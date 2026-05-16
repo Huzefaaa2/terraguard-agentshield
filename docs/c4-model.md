@@ -113,4 +113,4 @@ flowchart LR
 | Attestation validation | Implemented |
 | GitHub PR comment publishing | Implemented |
 | GitHub Action attestation validation | Example provided |
-| SIEM/GRC exporters | Roadmap |
+| SIEM/GRC/change evidence exporters | Implemented foundation |

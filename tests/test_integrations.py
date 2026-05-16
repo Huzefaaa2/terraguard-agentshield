@@ -7,6 +7,8 @@ from terraguard_agentshield.integrations import (
     CommandInterceptor,
     GitHubPRCommentPublisher,
     GitHubPRAttestationExporter,
+    JiraEvidencePublisher,
+    ServiceNowEvidencePublisher,
     WebhookExporter,
 )
 from terraguard_agentshield.runtime import RuntimeGuard
@@ -224,3 +226,89 @@ def test_github_pr_comment_publisher_updates_existing_comment(monkeypatch) -> No
     assert result.success
     assert result.action == "updated"
     assert [request.get_method() for request in requests] == ["GET", "PATCH"]
+
+
+def test_jira_evidence_publisher_creates_adf_comment(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class Response:
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"id":"10001"}'
+
+    def fake_urlopen(request: Request, timeout: int) -> Response:
+        captured["request"] = request
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    audit = SessionAudit(session_id="jira-001", tool="codex", repo=Path("."))
+
+    result = JiraEvidencePublisher(
+        "https://example.atlassian.net",
+        email="security@example.com",
+        api_token="token",
+        timeout=4,
+    ).publish_comment("SEC-123", audit)
+
+    request = captured["request"]
+    assert result.success
+    assert result.action == "jira_comment_created"
+    assert captured["timeout"] == 4
+    assert isinstance(request, Request)
+    assert request.get_method() == "POST"
+    assert request.full_url.endswith("/rest/api/3/issue/SEC-123/comment")
+    assert request.headers["Authorization"].startswith("Basic ")
+
+    import json
+
+    payload = json.loads(request.data.decode("utf-8"))
+    assert payload["body"]["type"] == "doc"
+    assert "TerraGuard AgentShield Governance Report" in str(payload)
+
+
+def test_servicenow_evidence_publisher_updates_work_notes(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class Response:
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"result":{"sys_id":"abc123"}}'
+
+    def fake_urlopen(request: Request, timeout: int) -> Response:
+        captured["request"] = request
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    audit = SessionAudit(session_id="snow-001", tool="claude-code", repo=Path("."))
+
+    result = ServiceNowEvidencePublisher(
+        "https://example.service-now.com",
+        bearer_token="bearer-token",
+        timeout=5,
+    ).publish_work_note("change_request", "abc123", audit)
+
+    request = captured["request"]
+    assert result.success
+    assert result.action == "servicenow_record_updated"
+    assert captured["timeout"] == 5
+    assert isinstance(request, Request)
+    assert request.get_method() == "PATCH"
+    assert request.full_url.endswith("/api/now/table/change_request/abc123")
+    assert request.headers["Authorization"] == "Bearer bearer-token"
+
+    import json
+
+    payload = json.loads(request.data.decode("utf-8"))
+    assert "TerraGuard AgentShield Governance Report" in payload["work_notes"]

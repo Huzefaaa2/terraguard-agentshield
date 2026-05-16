@@ -186,7 +186,35 @@ terraguard-agentshield evidence publish-github-comment \
 
 In GitHub Actions, `GITHUB_REPOSITORY`, `GITHUB_EVENT_PATH`, and `GITHUB_TOKEN` are used automatically.
 
-## 12. Codex and Copilot Setup
+## 12. Publish Evidence to Jira and ServiceNow
+
+Jira:
+
+```bash
+export JIRA_BASE_URL="https://your-org.atlassian.net"
+export JIRA_EMAIL="security@example.com"
+export JIRA_API_TOKEN="replace-me"
+
+terraguard-agentshield evidence publish-jira SEC-123 \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit
+```
+
+ServiceNow:
+
+```bash
+export SERVICENOW_INSTANCE_URL="https://your-instance.service-now.com"
+export SERVICENOW_USERNAME="agentshield.integration"
+export SERVICENOW_PASSWORD="replace-me"
+
+terraguard-agentshield evidence publish-servicenow <record-sys-id> \
+  --table change_request \
+  --field work_notes \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit
+```
+
+## 13. Codex and Copilot Setup
 
 For Codex, copy `examples/codex/AGENTS.md` into the repo root.
 
@@ -194,7 +222,7 @@ For GitHub Copilot, copy `examples/copilot/copilot-instructions.md` to `.github/
 
 Then require `examples/github-actions/agentshield-required-check.yml` in branch protection.
 
-## 13. GitHub Actions Example
+## 14. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -230,7 +258,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 14. Pilot Rollout Model
+## 15. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |

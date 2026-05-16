@@ -1,6 +1,6 @@
 # Webhook and SIEM Integration
 
-Webhook delivery is implemented through the `evidence send-webhook` command. Native SIEM-specific exporters remain roadmap work, but enterprises can already send signed JSON evidence to a webhook receiver, SIEM collector, GRC archive, or change-management bridge.
+Webhook delivery is implemented through the `evidence send-webhook` command. Enterprises can send signed JSON evidence to a webhook receiver, SIEM collector, GRC archive, or change-management bridge. Native Jira and ServiceNow evidence routing is covered in `docs/evidence-routing.md`.
 
 ## Current Evidence Outputs
 
@@ -133,4 +133,5 @@ python examples/siem/sentinel/receiver.py
 
 ## Roadmap
 
-- ServiceNow/Jira change evidence mapping
+- Signed evidence bundle format
+- Deployment hardening examples for containerized receivers

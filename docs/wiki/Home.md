@@ -21,6 +21,8 @@ Implemented:
 - Built-in policy packs
 - Session audit JSON
 - Pull-request-ready markdown attestation
+- GitHub, Jira, and ServiceNow evidence publishing
+- Retryable SIEM webhook delivery
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -45,6 +47,7 @@ Implemented:
 - [Attestation Validation](Attestation-Validation)
 - [Codex and Copilot Governance](Codex-Copilot-Governance)
 - [SIEM Integration](SIEM-Integration)
+- [Evidence Routing](Evidence-Routing)
 - [Policy Authoring](Policy-Authoring)
 - [Threat Model](Threat-Model)
 - [Enterprise Adoption](Enterprise-Adoption)

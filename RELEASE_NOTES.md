@@ -23,6 +23,8 @@ Core governance:
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
+- Retryable webhook delivery plus Splunk/Sentinel receiver examples
+- Jira and ServiceNow evidence routing
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -43,6 +45,8 @@ CLI:
 - `terraguard-agentshield evidence send-webhook`
 - `terraguard-agentshield evidence validate`
 - `terraguard-agentshield evidence publish-github-comment`
+- `terraguard-agentshield evidence publish-jira`
+- `terraguard-agentshield evidence publish-servicenow`
 - `terraguard-agentshield policy sign`
 - `terraguard-agentshield policy verify`
 - `terraguard-agentshield policy list`
@@ -63,7 +67,6 @@ Documentation:
 
 ### Known Limitations
 
-- Jira and ServiceNow integrations are roadmap items.
 - Policy inheritance is a roadmap item.
 - Semantic risk analysis is roadmap work.
 
@@ -71,8 +74,8 @@ Documentation:
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Retryable webhook delivery and SIEM receiver examples
 - Asymmetric policy-signing option
+- Semantic risk classification
 
 ### Verification
 
@@ -80,7 +83,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 32 passed
+pytest -q -> 34 passed
 ```
 
 ### Links

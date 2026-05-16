@@ -20,6 +20,8 @@ Implemented:
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
+- Retryable webhook delivery plus Splunk/Sentinel receiver examples
+- Jira and ServiceNow evidence routing
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -27,7 +29,6 @@ Implemented:
 
 Not yet implemented:
 
-- Native Jira/ServiceNow integrations
 - Policy inheritance
 - Semantic risk engine
 - Web UI
@@ -80,6 +81,8 @@ terraguard-agentshield policy sign policies/banking-regulated-ai/policy.yaml
 terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml
 terraguard-agentshield evidence validate --audit-dir .terraguard/audit
 terraguard-agentshield evidence publish-github-comment --audit-dir .terraguard/audit
+terraguard-agentshield evidence publish-jira SEC-123 --audit-dir .terraguard/audit
+terraguard-agentshield evidence publish-servicenow <sys-id> --audit-dir .terraguard/audit
 ```
 
 ## Policy Packs
@@ -97,15 +100,15 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 32 passed
+pytest -q -> 34 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.2 Enterprise Evidence Routing**:
 
-1. Add Jira and ServiceNow evidence routing.
-2. Add asymmetric signing option for policy bundles.
-3. Add semantic risk classification for source and IaC diffs.
-4. Add a lightweight enterprise policy management API.
-5. Add deployment hardening examples for containerized receivers.
+1. Add asymmetric signing option for policy bundles.
+2. Add semantic risk classification for source and IaC diffs.
+3. Add a lightweight enterprise policy management API.
+4. Add deployment hardening examples for containerized receivers.
+5. Add policy inheritance for enterprise -> business unit -> repository.

@@ -63,7 +63,9 @@ terraguard-agentshield agent attest <session-id> \
 ```bash
 terraguard-agentshield evidence send-webhook <session-id> \
   --audit-dir .terraguard/audit \
-  --url https://security.example.com/events
+  --url https://security.example.com/events \
+  --retries 3 \
+  --backoff-seconds 2
 ```
 
 ## Sign Policy
@@ -86,6 +88,20 @@ terraguard-agentshield evidence validate \
 
 ```bash
 terraguard-agentshield evidence publish-github-comment \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit
+```
+
+## Publish to Jira and ServiceNow
+
+```bash
+terraguard-agentshield evidence publish-jira SEC-123 \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit
+
+terraguard-agentshield evidence publish-servicenow <record-sys-id> \
+  --table change_request \
+  --field work_notes \
   --session-id <session-id> \
   --audit-dir .terraguard/audit
 ```

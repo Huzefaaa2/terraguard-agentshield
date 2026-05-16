@@ -22,6 +22,8 @@ from terraguard_agentshield.integrations import (
     CommandInterceptor,
     GitHubPRCommentPublisher,
     GitHubPRAttestationExporter,
+    JiraEvidencePublisher,
+    ServiceNowEvidencePublisher,
     WebhookExporter,
 )
 from terraguard_agentshield.policy_signing import (
@@ -335,6 +337,95 @@ def publish_github_comment(
         return
 
     console.print(f"[red]ERROR[/red] GitHub PR comment failed: {result.error}")
+    raise typer.Exit(code=1)
+
+
+@evidence_app.command("publish-jira")
+def publish_jira(
+    issue_key: Annotated[str, typer.Argument(help="Jira issue key, e.g. SEC-123.")],
+    session_id: Annotated[str | None, typer.Option(help="Session ID. Defaults to latest audit.")] = None,
+    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
+    base_url: Annotated[str | None, typer.Option(help="Jira base URL, e.g. https://org.atlassian.net.")] = None,
+    email: Annotated[str | None, typer.Option(help="Jira account email for API token auth.")] = None,
+    api_token: Annotated[str | None, typer.Option(help="Jira API token. Prefer env var in CI.")] = None,
+    bearer_token: Annotated[str | None, typer.Option(help="Optional Jira bearer token.")] = None,
+    timeout: Annotated[int, typer.Option(help="HTTP timeout in seconds.")] = 10,
+) -> None:
+    """Publish AgentShield evidence as a Jira issue comment."""
+    try:
+        audit = load_audit_for_validation(audit_dir, session_id=session_id)
+    except FileNotFoundError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    jira_base_url = base_url or os.environ.get("JIRA_BASE_URL")
+    if not jira_base_url:
+        console.print("[red]ERROR[/red] Jira base URL missing. Set --base-url or JIRA_BASE_URL.")
+        raise typer.Exit(code=1)
+
+    publisher = JiraEvidencePublisher(
+        jira_base_url,
+        email=email or os.environ.get("JIRA_EMAIL"),
+        api_token=api_token or os.environ.get("JIRA_API_TOKEN"),
+        bearer_token=bearer_token or os.environ.get("JIRA_BEARER_TOKEN"),
+        timeout=timeout,
+    )
+    result = publisher.publish_comment(issue_key, audit)
+    if result.success:
+        console.print(f"[green]OK[/green] Jira evidence published to {result.target}")
+        if result.url:
+            console.print(result.url)
+        return
+
+    console.print(f"[red]ERROR[/red] Jira evidence publish failed: {result.error}")
+    raise typer.Exit(code=1)
+
+
+@evidence_app.command("publish-servicenow")
+def publish_servicenow(
+    sys_id: Annotated[str, typer.Argument(help="ServiceNow record sys_id.")],
+    session_id: Annotated[str | None, typer.Option(help="Session ID. Defaults to latest audit.")] = None,
+    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
+    instance_url: Annotated[str | None, typer.Option(help="ServiceNow instance URL.")] = None,
+    table: Annotated[str, typer.Option(help="ServiceNow table name.")] = "change_request",
+    field: Annotated[str, typer.Option(help="Field to update with evidence.")] = "work_notes",
+    username: Annotated[str | None, typer.Option(help="ServiceNow username for basic auth.")] = None,
+    password: Annotated[str | None, typer.Option(help="ServiceNow password. Prefer env var in CI.")] = None,
+    bearer_token: Annotated[str | None, typer.Option(help="Optional ServiceNow bearer token.")] = None,
+    timeout: Annotated[int, typer.Option(help="HTTP timeout in seconds.")] = 10,
+) -> None:
+    """Publish AgentShield evidence to a ServiceNow record work note."""
+    try:
+        audit = load_audit_for_validation(audit_dir, session_id=session_id)
+    except FileNotFoundError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    snow_instance_url = instance_url or os.environ.get("SERVICENOW_INSTANCE_URL")
+    if not snow_instance_url:
+        console.print(
+            "[red]ERROR[/red] ServiceNow instance URL missing. "
+            "Set --instance-url or SERVICENOW_INSTANCE_URL."
+        )
+        raise typer.Exit(code=1)
+
+    publisher = ServiceNowEvidencePublisher(
+        snow_instance_url,
+        username=username or os.environ.get("SERVICENOW_USERNAME"),
+        password=password or os.environ.get("SERVICENOW_PASSWORD"),
+        bearer_token=bearer_token or os.environ.get("SERVICENOW_BEARER_TOKEN"),
+        timeout=timeout,
+    )
+    result = publisher.publish_work_note(table, sys_id, audit, field=field)
+    if result.success:
+        console.print(
+            f"[green]OK[/green] ServiceNow evidence published to {result.target}"
+        )
+        if result.url:
+            console.print(result.url)
+        return
+
+    console.print(f"[red]ERROR[/red] ServiceNow evidence publish failed: {result.error}")
     raise typer.Exit(code=1)
 
 

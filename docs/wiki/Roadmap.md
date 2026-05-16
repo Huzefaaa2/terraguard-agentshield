@@ -13,6 +13,7 @@ Implemented:
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
 - Retryable webhook delivery and SIEM receiver examples
+- Jira and ServiceNow evidence routing
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
@@ -25,10 +26,9 @@ Implemented:
 
 ## v0.3 Enterprise Evidence
 
-- SIEM webhook CLI
-- Splunk and Sentinel examples
-- Jira and ServiceNow mapping
 - Signed evidence bundle format
+- Policy decision summary by risk and control family
+- Deployment hardening examples for containerized receivers
 
 ## v0.4 Policy Governance
 

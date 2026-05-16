@@ -145,6 +145,20 @@ terraguard-agentshield evidence publish-github-comment \
   --pr-number 123
 ```
 
+Publish evidence to Jira and ServiceNow:
+
+```bash
+terraguard-agentshield evidence publish-jira SEC-123 \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit
+
+terraguard-agentshield evidence publish-servicenow <record-sys-id> \
+  --table change_request \
+  --field work_notes \
+  --session-id <session-id> \
+  --audit-dir .terraguard/audit
+```
+
 Sign and verify a policy bundle:
 
 ```bash
@@ -209,7 +223,7 @@ flowchart LR
     C --> H[MCP Guard]
     C --> I[Session Audit]
     I --> J[PR Attestation]
-    I --> K[SIEM / GRC Export Roadmap]
+    I --> K[SIEM / GRC / Change Evidence]
 ```
 
 More detail:
@@ -222,6 +236,8 @@ More detail:
 - [Policy Signing](docs/policy-signing.md)
 - [Attestation Validation](docs/attestation-validation.md)
 - [Codex and Copilot Governance](docs/codex-copilot-governance.md)
+- [Evidence Routing](docs/evidence-routing.md)
+- [SIEM Integration](docs/siem-integration.md)
 - [Policy Authoring](docs/policy-authoring.md)
 - [Enterprise Adoption](docs/enterprise-adoption.md)
 - [Case Studies](docs/case-studies.md)
@@ -247,12 +263,12 @@ Implemented:
 - GitHub PR comment publishing for AgentShield reports
 - Codex and Copilot governance examples
 - Retryable webhook delivery plus Splunk/Sentinel receiver examples
+- Jira and ServiceNow evidence routing
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Jira/ServiceNow evidence routing
 - Semantic diff/risk engine
 
 ## References
@@ -261,3 +277,5 @@ Next:
 - GitHub Copilot cloud agent: https://docs.github.com/en/copilot/concepts/agents/cloud-agent/about-cloud-agent
 - OpenAI Codex: https://openai.com/index/introducing-codex/
 - Model Context Protocol: https://modelcontextprotocol.io/docs/learn/architecture
+- Jira Cloud issue comment REST API: https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-comments/
+- ServiceNow Table API: https://www.servicenow.com/docs/r/api-reference/rest-apis/c_TableAPI.html
