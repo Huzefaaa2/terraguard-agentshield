@@ -25,6 +25,7 @@ Implemented:
 - Asymmetric policy bundle signing for CI verification
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
+- Policy inheritance across enterprise, business unit, and repository layers
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -32,7 +33,6 @@ Implemented:
 
 Not yet implemented:
 
-- Policy inheritance
 - Advanced semantic risk routing
 - Web UI
 
@@ -72,6 +72,7 @@ terraguard-agentshield/
 ```bash
 terraguard-agentshield policy list
 terraguard-agentshield policy describe ai-agent-baseline
+terraguard-agentshield policy resolve --enterprise banking-regulated-ai --repository terraform-ai-guardrails
 
 terraguard-agentshield agent start --tool claude-code --repo .
 terraguard-agentshield agent exec "terraform plan"
@@ -107,15 +108,15 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 45 passed
+pytest -q -> 50 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.3 Evidence Hardening**:
 
-1. Add policy inheritance for enterprise -> business unit -> repository.
-2. Add a lightweight enterprise policy management API.
-3. Add deployment hardening examples for containerized receivers.
-4. Add dynamic approval routing from risk findings.
-5. Add policy decision summary by risk and control family.
+1. Add a lightweight enterprise policy management API.
+2. Add deployment hardening examples for containerized receivers.
+3. Add dynamic approval routing from risk findings.
+4. Add policy decision summary by risk and control family.
+5. Add policy test harness and compliance mappings.

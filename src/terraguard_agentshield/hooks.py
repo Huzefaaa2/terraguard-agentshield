@@ -26,15 +26,26 @@ class ClaudeHookProcessor:
     def __init__(
         self,
         policy_pack: str = "ai-agent-baseline",
+        enterprise_policy: str | None = None,
+        business_unit_policy: str | None = None,
+        repository_policy: str | None = None,
         repo: Path = Path("."),
         audit_dir: Path = Path(".terraguard/audit"),
         tool: str = "claude-code",
     ) -> None:
         self.policy_pack = policy_pack
+        self.enterprise_policy = enterprise_policy
+        self.business_unit_policy = business_unit_policy
+        self.repository_policy = repository_policy
         self.repo = repo.resolve()
         self.audit_dir = audit_dir
         self.tool = tool
-        self.guard = RuntimeGuard(policy_pack=policy_pack)
+        self.guard = RuntimeGuard(
+            policy_pack=policy_pack,
+            enterprise_policy=enterprise_policy,
+            business_unit_policy=business_unit_policy,
+            repository_policy=repository_policy,
+        )
 
     def process(self, payload: dict[str, Any]) -> HookDecision:
         event_name = str(payload.get("hook_event_name") or payload.get("event") or "")
@@ -55,6 +66,9 @@ class ClaudeHookProcessor:
                     "hook_event": event_name,
                     "tool_name": tool_name,
                     "policy_pack": self.policy_pack,
+                    "enterprise_policy": self.enterprise_policy,
+                    "business_unit_policy": self.business_unit_policy,
+                    "repository_policy": self.repository_policy,
                     "tool_input_keys": sorted(str(key) for key in tool_input.keys()),
                 },
             )

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from terraguard_agentshield.policy_registry import PolicyRegistry
 from terraguard_agentshield.audit import SessionAudit
 from terraguard_agentshield.hooks import ClaudeHookProcessor
 
@@ -88,3 +89,33 @@ def test_claude_hook_mcp_capability_block(tmp_path: Path) -> None:
 
     assert decision.decision == "block"
     assert json.dumps(decision.output)
+
+
+def test_claude_hook_passes_policy_layers(monkeypatch, tmp_path: Path) -> None:
+    def fake_resolve_policy(self, **kwargs):
+        assert kwargs["enterprise"] == "enterprise"
+        assert kwargs["business_unit"] == "payments"
+        assert kwargs["repository"] == "repo"
+        return {"metadata": {"id": "resolved"}, "commands": {"block": ["danger*"]}}
+
+    monkeypatch.setattr(PolicyRegistry, "resolve_policy", fake_resolve_policy)
+
+    processor = ClaudeHookProcessor(
+        policy_pack=None,
+        enterprise_policy="enterprise",
+        business_unit_policy="payments",
+        repository_policy="repo",
+        repo=tmp_path,
+        audit_dir=tmp_path / "audit",
+    )
+
+    decision = processor.process(
+        {
+            "session_id": "sess-005",
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Bash",
+            "tool_input": {"command": "danger deploy"},
+        }
+    )
+
+    assert decision.decision == "block"

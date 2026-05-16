@@ -91,6 +91,9 @@ def exec_command(
     tool: Annotated[str, typer.Option(help="AI tool identifier.")] = "claude-code",
     repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
     policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = None,
+    enterprise_policy: Annotated[str | None, typer.Option(help="Enterprise policy layer.")] = None,
+    business_unit_policy: Annotated[str | None, typer.Option(help="Business unit policy layer.")] = None,
+    repository_policy: Annotated[str | None, typer.Option(help="Repository policy layer.")] = None,
     output: Annotated[Path, typer.Option(help="Audit output directory.")] = Path(".terraguard"),
 ) -> None:
     """Execute a command under governance policy."""
@@ -99,7 +102,12 @@ def exec_command(
     )
     session = manager.start_session()
 
-    guard = RuntimeGuard(policy_pack=session.policy_pack or "ai-agent-baseline")
+    guard = RuntimeGuard(
+        policy_pack=policy_pack,
+        enterprise_policy=enterprise_policy,
+        business_unit_policy=business_unit_policy,
+        repository_policy=repository_policy,
+    )
     interceptor = CommandInterceptor(guard, session.audit)
     result = interceptor.execute(command)
 
@@ -121,6 +129,9 @@ def check_file(
     tool: Annotated[str, typer.Option(help="AI tool identifier.")] = "claude-code",
     repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
     policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = None,
+    enterprise_policy: Annotated[str | None, typer.Option(help="Enterprise policy layer.")] = None,
+    business_unit_policy: Annotated[str | None, typer.Option(help="Business unit policy layer.")] = None,
+    repository_policy: Annotated[str | None, typer.Option(help="Repository policy layer.")] = None,
     output: Annotated[Path, typer.Option(help="Audit output directory.")] = Path(".terraguard"),
 ) -> None:
     """Evaluate and audit an AI agent file access request."""
@@ -128,7 +139,12 @@ def check_file(
         repo=repo, tool=tool, policy_pack=policy_pack, output_dir=output
     )
     session = manager.start_session()
-    guard = RuntimeGuard(policy_pack=session.policy_pack)
+    guard = RuntimeGuard(
+        policy_pack=policy_pack,
+        enterprise_policy=enterprise_policy,
+        business_unit_policy=business_unit_policy,
+        repository_policy=repository_policy,
+    )
     decision = guard.evaluate_file_access(path, mode)
     session.audit.add_action(
         AuditAction(
@@ -155,6 +171,9 @@ def check_mcp(
     tool: Annotated[str, typer.Option(help="AI tool identifier.")] = "claude-code",
     repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
     policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = "mcp-server-governance",
+    enterprise_policy: Annotated[str | None, typer.Option(help="Enterprise policy layer.")] = None,
+    business_unit_policy: Annotated[str | None, typer.Option(help="Business unit policy layer.")] = None,
+    repository_policy: Annotated[str | None, typer.Option(help="Repository policy layer.")] = None,
     output: Annotated[Path, typer.Option(help="Audit output directory.")] = Path(".terraguard"),
 ) -> None:
     """Evaluate and audit an MCP server connection request."""
@@ -162,7 +181,12 @@ def check_mcp(
         repo=repo, tool=tool, policy_pack=policy_pack, output_dir=output
     )
     session = manager.start_session()
-    guard = RuntimeGuard(policy_pack=session.policy_pack)
+    guard = RuntimeGuard(
+        policy_pack=policy_pack,
+        enterprise_policy=enterprise_policy,
+        business_unit_policy=business_unit_policy,
+        repository_policy=repository_policy,
+    )
     decision = guard.evaluate_mcp_server(server_id, capability=capability)
     session.audit.add_action(
         AuditAction(
@@ -215,6 +239,9 @@ def generate_attestation(
 @hooks_app.command("claude")
 def claude_hook(
     policy_pack: Annotated[str, typer.Option(help="Policy pack ID.")] = "ai-agent-baseline",
+    enterprise_policy: Annotated[str | None, typer.Option(help="Enterprise policy layer.")] = None,
+    business_unit_policy: Annotated[str | None, typer.Option(help="Business unit policy layer.")] = None,
+    repository_policy: Annotated[str | None, typer.Option(help="Repository policy layer.")] = None,
     repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
     audit_dir: Annotated[Path, typer.Option(help="Audit output directory.")] = Path(".terraguard/audit"),
     tool: Annotated[str, typer.Option(help="Agent tool label for audit evidence.")] = "claude-code",
@@ -228,6 +255,9 @@ def claude_hook(
 
     processor = ClaudeHookProcessor(
         policy_pack=policy_pack,
+        enterprise_policy=enterprise_policy,
+        business_unit_policy=business_unit_policy,
+        repository_policy=repository_policy,
         repo=repo,
         audit_dir=audit_dir,
         tool=tool,
@@ -561,6 +591,29 @@ def describe_policy(
     if pack.get("policy"):
         console.print("[yellow]Policy rules:[/yellow]")
         console.print(JSON(json.dumps(pack["policy"], indent=2)))
+
+
+@policy_app.command("resolve")
+def resolve_policy(
+    enterprise: Annotated[str | None, typer.Option(help="Enterprise policy pack ID.")] = None,
+    business_unit: Annotated[str | None, typer.Option(help="Business unit policy pack ID.")] = None,
+    repository: Annotated[str | None, typer.Option(help="Repository policy pack ID.")] = None,
+    policy_pack: Annotated[str | None, typer.Option(help="Final/default policy pack ID.")] = None,
+    output: Annotated[Path | None, typer.Option(help="Optional resolved policy JSON output path.")] = None,
+) -> None:
+    """Resolve inherited policy layers into one effective policy."""
+    registry = PolicyRegistry()
+    policy = registry.resolve_policy(
+        enterprise=enterprise,
+        business_unit=business_unit,
+        repository=repository,
+        policy_pack=policy_pack,
+    )
+    payload = json.dumps(policy, indent=2)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload + "\n", encoding="utf-8")
+    console.print(JSON(payload))
 
 
 @policy_app.command("sign")

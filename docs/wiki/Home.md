@@ -25,6 +25,7 @@ Implemented:
 - Retryable SIEM webhook delivery
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
+- Policy inheritance across enterprise, business unit, and repository layers
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -46,6 +47,7 @@ Implemented:
 - [Implementation Guide](Implementation-Guide)
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
+- [Policy Inheritance](Policy-Inheritance)
 - [Attestation Validation](Attestation-Validation)
 - [Codex and Copilot Governance](Codex-Copilot-Governance)
 - [Risk Classification](Risk-Classification)

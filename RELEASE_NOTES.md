@@ -27,6 +27,7 @@ Core governance:
 - Jira and ServiceNow evidence routing
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
+- Policy inheritance across enterprise, business unit, and repository layers
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -56,6 +57,7 @@ CLI:
 - `terraguard-agentshield policy verify`
 - `terraguard-agentshield policy list`
 - `terraguard-agentshield policy describe`
+- `terraguard-agentshield policy resolve`
 - `terraguard-agentshield risk diff`
 
 Documentation:
@@ -73,15 +75,14 @@ Documentation:
 
 ### Known Limitations
 
-- Policy inheritance is a roadmap item.
 - Advanced semantic risk routing is roadmap work.
 
 ### Recommended Next Release
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Policy inheritance
 - Enterprise policy management API
+- Deployment hardening examples
 
 ### Verification
 
@@ -89,7 +90,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 45 passed
+pytest -q -> 50 passed
 ```
 
 ### Links

@@ -14,9 +14,20 @@ class ActionDecision:
 
 
 class RuntimeGuard:
-    def __init__(self, policy_pack: str | None = None) -> None:
+    def __init__(
+        self,
+        policy_pack: str | None = None,
+        enterprise_policy: str | None = None,
+        business_unit_policy: str | None = None,
+        repository_policy: str | None = None,
+    ) -> None:
         self.registry = PolicyRegistry()
-        self.policy = self.registry.load_policy(policy_pack or "ai-agent-baseline")
+        self.policy = self.registry.resolve_policy(
+            enterprise=enterprise_policy,
+            business_unit=business_unit_policy,
+            repository=repository_policy,
+            policy_pack=policy_pack,
+        )
         self.sensitive_read = self._patterns("filesystem", "block_read")
         self.sensitive_write = self._patterns("filesystem", "block_write")
         self.approval_write = self._patterns("filesystem", "require_approval_write")

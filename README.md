@@ -84,6 +84,16 @@ terraguard-agentshield agent exec "terraform apply -auto-approve" \
   --policy-pack terraform-ai-guardrails
 ```
 
+Resolve layered enterprise policy:
+
+```bash
+terraguard-agentshield policy resolve \
+  --enterprise banking-regulated-ai \
+  --business-unit mcp-server-governance \
+  --repository terraform-ai-guardrails \
+  --output resolved-policy.json
+```
+
 Check file access:
 
 ```bash
@@ -267,6 +277,7 @@ More detail:
 - [Implementation Guide](docs/implementation-guide.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
+- [Policy Inheritance](docs/policy-inheritance.md)
 - [Attestation Validation](docs/attestation-validation.md)
 - [Codex and Copilot Governance](docs/codex-copilot-governance.md)
 - [Risk Classification](docs/risk-classification.md)
@@ -302,13 +313,14 @@ Implemented:
 - Asymmetric policy bundle signing for CI verification
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
+- Policy inheritance across enterprise, business unit, and repository layers
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Policy inheritance
 - Enterprise policy management API
+- Deployment hardening examples
 
 ## References
 

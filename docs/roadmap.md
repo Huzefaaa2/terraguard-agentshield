@@ -30,6 +30,7 @@ Status: **Implemented in this repo**
 - Asymmetric policy bundle signing
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
+- Policy inheritance: enterprise -> business unit -> repo
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -56,7 +57,6 @@ Recommended next implementation phase.
 ## v0.4: Policy Governance
 
 - Organization policy pack templates
-- Policy inheritance: enterprise -> business unit -> repo
 - Policy test harness
 - Policy bundle version pinning
 - Control mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and banking technology risk controls

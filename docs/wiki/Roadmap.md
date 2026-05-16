@@ -17,6 +17,7 @@ Implemented:
 - Asymmetric policy bundle signing
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
+- Policy inheritance
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
@@ -34,7 +35,6 @@ Implemented:
 
 ## v0.4 Policy Governance
 
-- Policy inheritance
 - Policy test harness
 - Compliance control mappings
 

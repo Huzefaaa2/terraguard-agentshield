@@ -104,10 +104,20 @@ Block a risky capability:
 terraguard-agentshield agent check-mcp github-enterprise \
   --capability delete_repo \
   --policy-pack mcp-server-governance \
-  --output .terraguard/audit
+      --output .terraguard/audit
 ```
 
-## 6. Connect Claude Code Hooks
+## 6. Resolve Layered Policies
+
+```bash
+terraguard-agentshield policy resolve \
+  --enterprise banking-regulated-ai \
+  --business-unit mcp-server-governance \
+  --repository terraform-ai-guardrails \
+  --output resolved-policy.json
+```
+
+## 7. Connect Claude Code Hooks
 
 Use the sample settings at `examples/claude-code/settings.json` to connect Claude Code `PreToolUse` events to AgentShield.
 
@@ -123,7 +133,7 @@ printf '%s' '{"session_id":"demo","hook_event_name":"PreToolUse","tool_name":"Ba
 
 Expected outcome: a deny decision is returned and evidence is written to `.terraguard/audit/session-demo.json`.
 
-## 7. Generate PR Attestation
+## 8. Generate PR Attestation
 
 ```bash
 terraguard-agentshield agent attest <session-id> \
@@ -133,7 +143,7 @@ terraguard-agentshield agent attest <session-id> \
 
 This produces a markdown report that can be pasted into a pull request or published by CI.
 
-## 8. Send Evidence to a Webhook
+## 9. Send Evidence to a Webhook
 
 Dry run:
 
@@ -155,7 +165,7 @@ terraguard-agentshield evidence send-webhook <session-id> \
   --backoff-seconds 2
 ```
 
-## 9. Sign and Verify Policy Bundles
+## 10. Sign and Verify Policy Bundles
 
 ```bash
 terraguard-agentshield policy keygen \
@@ -170,7 +180,7 @@ terraguard-agentshield policy verify policies/banking-regulated-ai/policy.yaml \
   --public-key .terraguard/keys/policy-public.pem
 ```
 
-## 10. Validate Evidence for Protected Branches
+## 11. Validate Evidence for Protected Branches
 
 ```bash
 terraguard-agentshield evidence validate \
@@ -180,7 +190,7 @@ terraguard-agentshield evidence validate \
   --output agentshield-validation.json
 ```
 
-## 11. Classify Semantic Diff Risk
+## 12. Classify Semantic Diff Risk
 
 ```bash
 git diff main...HEAD > change.diff
@@ -191,7 +201,7 @@ terraguard-agentshield risk diff change.diff \
   --fail-on high
 ```
 
-## 12. Create Signed Evidence Bundle
+## 13. Create Signed Evidence Bundle
 
 ```bash
 terraguard-agentshield evidence bundle \
@@ -207,7 +217,7 @@ terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json \
   --public-key .terraguard/keys/evidence-public.pem
 ```
 
-## 13. Publish PR Attestation Comment
+## 14. Publish PR Attestation Comment
 
 ```bash
 terraguard-agentshield evidence publish-github-comment \
@@ -219,7 +229,7 @@ terraguard-agentshield evidence publish-github-comment \
 
 In GitHub Actions, `GITHUB_REPOSITORY`, `GITHUB_EVENT_PATH`, and `GITHUB_TOKEN` are used automatically.
 
-## 14. Publish Evidence to Jira and ServiceNow
+## 15. Publish Evidence to Jira and ServiceNow
 
 Jira:
 
@@ -247,7 +257,7 @@ terraguard-agentshield evidence publish-servicenow <record-sys-id> \
   --audit-dir .terraguard/audit
 ```
 
-## 15. Codex and Copilot Setup
+## 16. Codex and Copilot Setup
 
 For Codex, copy `examples/codex/AGENTS.md` into the repo root.
 
@@ -255,7 +265,7 @@ For GitHub Copilot, copy `examples/copilot/copilot-instructions.md` to `.github/
 
 Then require `examples/github-actions/agentshield-required-check.yml` in branch protection.
 
-## 16. GitHub Actions Example
+## 17. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -291,7 +301,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 17. Pilot Rollout Model
+## 18. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |

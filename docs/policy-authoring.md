@@ -66,7 +66,11 @@ commands:
 
 ### Policy pack inheritance
 
-Policy pack inheritance is planned for a future release. In the current enterprise foundation, create one composed policy pack per environment or team.
+Policy pack inheritance is supported with this merge order:
+
+```text
+enterprise -> business unit -> repository -> policy pack
+```
 
 Recommended structure:
 
@@ -81,6 +85,16 @@ policies/
 ```
 
 Within a policy pack, decision precedence is block, then require approval, then allow.
+
+Resolve and inspect the effective policy:
+
+```bash
+terraguard-agentshield policy resolve \
+  --enterprise platform-banking-ai \
+  --business-unit payments-ai \
+  --repository developer-sandbox-ai \
+  --output resolved-policy.json
+```
 
 ## Best practices
 
