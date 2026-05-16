@@ -130,7 +130,9 @@ Send evidence to an enterprise webhook or SIEM endpoint:
 ```bash
 terraguard-agentshield evidence send-webhook <session-id> \
   --audit-dir .terraguard/audit \
-  --url https://security.example.com/agentshield/events
+  --url https://security.example.com/agentshield/events \
+  --retries 3 \
+  --backoff-seconds 2
 ```
 
 Publish or update a GitHub PR attestation comment:
@@ -244,11 +246,13 @@ Implemented:
 - CI attestation validation for protected branch checks
 - GitHub PR comment publishing for AgentShield reports
 - Codex and Copilot governance examples
+- Retryable webhook delivery plus Splunk/Sentinel receiver examples
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
+- Jira/ServiceNow evidence routing
 - Semantic diff/risk engine
 
 ## References

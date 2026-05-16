@@ -12,6 +12,7 @@ Implemented:
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
+- Retryable webhook delivery and SIEM receiver examples
 - JSON session audit
 - PR markdown attestation
 - CLI workflow

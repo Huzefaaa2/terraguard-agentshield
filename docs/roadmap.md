@@ -25,6 +25,7 @@ Status: **Implemented in this repo**
 - Attestation validation for protected branch checks
 - GitHub PR comment publishing
 - Codex and Copilot governance examples
+- Retryable webhook delivery and SIEM receiver examples
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -45,8 +46,7 @@ Recommended next implementation phase.
 
 ## v0.3: Enterprise Evidence and Approval
 
-- Retryable webhook delivery and SIEM receiver examples
-- Splunk and Microsoft Sentinel examples
+- Jira and ServiceNow receiver examples
 - GitHub PR comment publishing workflow
 - Jira and ServiceNow evidence mapping examples
 - Policy decision summary by risk and control family

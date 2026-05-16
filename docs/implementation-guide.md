@@ -150,7 +150,9 @@ Send with HMAC signing:
 export TERRAGUARD_AGENTSHIELD_WEBHOOK_SECRET="replace-me"
 terraguard-agentshield evidence send-webhook <session-id> \
   --audit-dir .terraguard/audit \
-  --url https://security.example.com/events
+  --url https://security.example.com/events \
+  --retries 3 \
+  --backoff-seconds 2
 ```
 
 ## 9. Sign and Verify Policy Bundles

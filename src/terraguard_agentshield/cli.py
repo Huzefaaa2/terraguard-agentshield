@@ -225,6 +225,9 @@ def send_webhook(
     url: Annotated[str, typer.Option(help="Webhook endpoint URL.")],
     audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
     hmac_secret: Annotated[str | None, typer.Option(help="Optional HMAC signing secret.")] = None,
+    timeout: Annotated[int, typer.Option(help="HTTP timeout in seconds.")] = 10,
+    retries: Annotated[int, typer.Option(help="Retry count after the first attempt.")] = 2,
+    backoff_seconds: Annotated[float, typer.Option(help="Linear backoff seconds between retries.")] = 1.0,
     dry_run: Annotated[bool, typer.Option(help="Print payload without sending.")] = False,
 ) -> None:
     """Send session evidence to an enterprise webhook/SIEM endpoint."""
@@ -239,12 +242,21 @@ def send_webhook(
         return
 
     secret = hmac_secret or os.environ.get("TERRAGUARD_AGENTSHIELD_WEBHOOK_SECRET")
-    exporter = WebhookExporter(url, hmac_secret=secret)
-    if exporter.export(audit):
-        console.print("[green]OK[/green] Evidence delivered")
+    exporter = WebhookExporter(
+        url,
+        hmac_secret=secret,
+        timeout=timeout,
+        retries=retries,
+        backoff_seconds=backoff_seconds,
+    )
+    result = exporter.deliver(audit)
+    if result.success:
+        console.print(f"[green]OK[/green] Evidence delivered in {result.attempts} attempt(s)")
         return
 
-    console.print("[red]ERROR[/red] Evidence delivery failed")
+    console.print(
+        f"[red]ERROR[/red] Evidence delivery failed after {result.attempts} attempt(s): {result.error}"
+    )
     raise typer.Exit(code=1)
 
 

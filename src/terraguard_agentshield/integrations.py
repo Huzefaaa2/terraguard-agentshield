@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import subprocess
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -84,18 +85,59 @@ class GitHubPRAttestationExporter:
         return artifact_path
 
 
+@dataclass(frozen=True)
+class WebhookDeliveryResult:
+    success: bool
+    attempts: int
+    status: int | None = None
+    error: str | None = None
+
+
 class WebhookExporter:
     def __init__(
         self,
         webhook_url: str,
         hmac_secret: str | None = None,
         timeout: int = 10,
+        retries: int = 2,
+        backoff_seconds: float = 1.0,
     ) -> None:
         self.webhook_url = webhook_url
         self.hmac_secret = hmac_secret
         self.timeout = timeout
+        self.retries = retries
+        self.backoff_seconds = backoff_seconds
 
     def export(self, audit: SessionAudit) -> bool:
+        return self.deliver(audit).success
+
+    def deliver(self, audit: SessionAudit) -> WebhookDeliveryResult:
+        attempts = max(1, self.retries + 1)
+        last_error: str | None = None
+        last_status: int | None = None
+        for attempt in range(1, attempts + 1):
+            result = self._send_once(audit)
+            if result.success:
+                return WebhookDeliveryResult(
+                    success=True,
+                    attempts=attempt,
+                    status=result.status,
+                    error=result.error,
+                )
+            last_error = result.error
+            last_status = result.status
+            if attempt < attempts and self._should_retry(result):
+                time.sleep(self.backoff_seconds * attempt)
+                continue
+            break
+        return WebhookDeliveryResult(
+            success=False,
+            attempts=attempt,
+            status=last_status,
+            error=last_error,
+        )
+
+    def _send_once(self, audit: SessionAudit) -> WebhookDeliveryResult:
         try:
             payload = json.dumps(audit.to_dict()).encode("utf-8")
             headers = {
@@ -115,9 +157,33 @@ class WebhookExporter:
                 method="POST",
             )
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                return response.status in (200, 201, 202, 204)
-        except (urllib.error.URLError, TimeoutError, OSError):
-            return False
+                return WebhookDeliveryResult(
+                    success=response.status in (200, 201, 202, 204),
+                    attempts=1,
+                    status=response.status,
+                    error=None
+                    if response.status in (200, 201, 202, 204)
+                    else f"Unexpected HTTP status: {response.status}",
+                )
+        except urllib.error.HTTPError as exc:
+            return WebhookDeliveryResult(
+                success=False,
+                attempts=1,
+                status=exc.code,
+                error=f"HTTP error: {exc.code}",
+            )
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            return WebhookDeliveryResult(
+                success=False,
+                attempts=1,
+                error=str(exc),
+            )
+
+    @staticmethod
+    def _should_retry(result: WebhookDeliveryResult) -> bool:
+        if result.status is None:
+            return True
+        return result.status in (408, 425, 429, 500, 502, 503, 504)
 
 
 @dataclass(frozen=True)

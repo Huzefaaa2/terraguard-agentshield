@@ -80,7 +80,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 31 passed
+pytest -q -> 32 passed
 ```
 
 ### Links

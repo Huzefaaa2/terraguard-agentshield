@@ -97,15 +97,15 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 31 passed
+pytest -q -> 32 passed
 ```
 
 ## Recommended Next Implementation
 
-The next recommended development step is **v0.2 Multi-Agent Integrations**:
+The next recommended development step is **v0.2 Enterprise Evidence Routing**:
 
-1. Add retry controls and SIEM receiver examples for webhook delivery.
+1. Add Jira and ServiceNow evidence routing.
 2. Add asymmetric signing option for policy bundles.
 3. Add semantic risk classification for source and IaC diffs.
-4. Add Jira/ServiceNow evidence routing.
-5. Add a lightweight enterprise policy management API.
+4. Add a lightweight enterprise policy management API.
+5. Add deployment hardening examples for containerized receivers.

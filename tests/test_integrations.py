@@ -112,6 +112,38 @@ def test_webhook_exporter_sends_signed_payload(monkeypatch) -> None:
     assert request.headers["X-agentshield-signature"].startswith("sha256=")
 
 
+def test_webhook_exporter_retries_transient_failure(monkeypatch) -> None:
+    calls = 0
+
+    class Response:
+        status = 202
+
+        def __enter__(self) -> "Response":
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+    def fake_urlopen(request: Request, timeout: int) -> Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise URLError("temporary")
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("time.sleep", lambda seconds: None)
+    audit = SessionAudit(session_id="test-retry", tool="claude-code", repo=Path("."))
+
+    result = WebhookExporter(
+        "https://example.com/events", retries=2, backoff_seconds=0
+    ).deliver(audit)
+
+    assert result.success
+    assert result.attempts == 2
+    assert calls == 2
+
+
 def test_webhook_exporter_returns_false_on_delivery_error(monkeypatch) -> None:
     def fake_urlopen(request: Request, timeout: int) -> None:
         raise URLError("down")
@@ -119,7 +151,7 @@ def test_webhook_exporter_returns_false_on_delivery_error(monkeypatch) -> None:
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     audit = SessionAudit(session_id="test-005", tool="claude-code", repo=Path("."))
 
-    assert not WebhookExporter("https://example.com/events").export(audit)
+    assert not WebhookExporter("https://example.com/events", retries=0).export(audit)
 
 
 def test_github_pr_comment_publisher_creates_comment(monkeypatch) -> None:

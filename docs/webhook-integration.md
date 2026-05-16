@@ -25,7 +25,10 @@ terraguard-agentshield agent attest <session-id> \
 ```bash
 terraguard-agentshield evidence send-webhook <session-id> \
   --audit-dir .terraguard/audit \
-  --url https://your-webhook-endpoint/events
+  --url https://your-webhook-endpoint/events \
+  --timeout 10 \
+  --retries 3 \
+  --backoff-seconds 2
 ```
 
 Dry run:
@@ -47,6 +50,18 @@ terraguard-agentshield evidence send-webhook <session-id> \
 ```
 
 AgentShield sends `X-AgentShield-Signature: sha256=<digest>` when a signing secret is configured.
+
+## Retry Behavior
+
+AgentShield retries transient delivery failures by default.
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `--timeout` | `10` | HTTP timeout in seconds |
+| `--retries` | `2` | Retry count after the first attempt |
+| `--backoff-seconds` | `1.0` | Linear backoff multiplier |
+
+Retries are attempted for network errors and transient HTTP statuses such as `408`, `429`, `500`, `502`, `503`, and `504`.
 
 ## Event Payload
 
@@ -89,9 +104,33 @@ Webhook receivers should:
 | `actions[].decision` | `decision` |
 | `actions[].target` | `target` |
 
+## Receiver Examples
+
+AgentShield includes dependency-light receiver examples:
+
+```text
+examples/siem/splunk/receiver.py
+examples/siem/sentinel/receiver.py
+```
+
+Splunk:
+
+```bash
+export SPLUNK_HEC_URL="https://splunk.example.com:8088"
+export SPLUNK_HEC_TOKEN="replace-me"
+export AGENTSHIELD_WEBHOOK_SECRET="replace-me"
+python examples/siem/splunk/receiver.py
+```
+
+Microsoft Sentinel:
+
+```bash
+export SENTINEL_WORKSPACE_ID="workspace-id"
+export SENTINEL_SHARED_KEY="base64-shared-key"
+export AGENTSHIELD_WEBHOOK_SECRET="replace-me"
+python examples/siem/sentinel/receiver.py
+```
+
 ## Roadmap
 
-- Retry and timeout controls
-- Splunk HEC example
-- Microsoft Sentinel example
 - ServiceNow/Jira change evidence mapping

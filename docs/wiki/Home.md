@@ -44,6 +44,7 @@ Implemented:
 - [Policy Signing](Policy-Signing)
 - [Attestation Validation](Attestation-Validation)
 - [Codex and Copilot Governance](Codex-Copilot-Governance)
+- [SIEM Integration](SIEM-Integration)
 - [Policy Authoring](Policy-Authoring)
 - [Threat Model](Threat-Model)
 - [Enterprise Adoption](Enterprise-Adoption)
