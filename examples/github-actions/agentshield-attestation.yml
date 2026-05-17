@@ -26,6 +26,11 @@ jobs:
             terraguard-agentshield agent attest "$SESSION_ID" \
               --audit-dir .terraguard/audit \
               --format markdown > .terraguard/artifacts/agentshield-report.md
+            terraguard-agentshield report generate \
+              --audit-dir .terraguard/audit \
+              --bundle-dir .terraguard/agentshield/evidence \
+              --validation .terraguard/artifacts/agentshield-validation.json \
+              --output .terraguard/artifacts/agentshield-governance-report.md
           else
             echo "No AgentShield audit found"
             exit 1
@@ -38,6 +43,10 @@ jobs:
           terraguard-agentshield evidence publish-github-comment \
             --session-id "$SESSION_ID" \
             --audit-dir .terraguard/audit
+          terraguard-agentshield report publish-github-comment \
+            --audit-dir .terraguard/audit \
+            --bundle-dir .terraguard/agentshield/evidence \
+            --validation .terraguard/artifacts/agentshield-validation.json
       - uses: actions/upload-artifact@v4
         with:
           name: agentshield-attestation

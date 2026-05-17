@@ -194,6 +194,16 @@ terraguard-agentshield compliance map \
   --output agentshield-compliance-map.json
 ```
 
+Generate a reviewer-ready governance report:
+
+```bash
+terraguard-agentshield report generate \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --validation agentshield-validation.json \
+  --output agentshield-governance-report.md
+```
+
 Send evidence to an enterprise webhook or SIEM endpoint:
 
 ```bash
@@ -322,6 +332,7 @@ More detail:
 - [Approval Routing](docs/approval-routing.md)
 - [Policy Test Harness](docs/policy-test-harness.md)
 - [Compliance Mappings](docs/compliance-mappings.md)
+- [Generated Reports](docs/generated-reports.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Policy Inheritance](docs/policy-inheritance.md)
@@ -367,6 +378,7 @@ Implemented:
 - Dynamic approval routing from risk findings and control families
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
+- Generated PR/check reports that combine validation, decision summaries, approval routing, and compliance mappings
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 

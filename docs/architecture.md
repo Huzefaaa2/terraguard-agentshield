@@ -152,6 +152,7 @@ Use cases:
 | Approval routing | Map risks and control families to enterprise approver groups | Implemented foundation |
 | Policy test harness | Validate policy-pack behavior before rollout | Implemented foundation |
 | Compliance mappings | Map AgentShield control families to common compliance frameworks | Implemented foundation |
+| Generated reports | Combine validation, decision summary, approval routing, and compliance mapping for reviewers | Implemented foundation |
 
 ## Reference Architecture
 

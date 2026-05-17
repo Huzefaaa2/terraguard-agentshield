@@ -24,6 +24,7 @@ Implemented:
 - Dynamic approval routing from risk findings and control families
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
+- Generated PR/check summaries that combine validation, routing, and compliance evidence
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
@@ -37,6 +38,7 @@ Implemented:
 ## v0.3 Enterprise Evidence
 
 - Write-side policy management and approval workflow API
+- Stored approval requests, approver decisions, timestamps, and evidence links
 
 ## v0.4 Policy Governance
 

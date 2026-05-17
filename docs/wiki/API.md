@@ -31,6 +31,8 @@ Evidence bundles are read from:
 | `GET` | `/approval/routes` | Route evidence to enterprise approver groups |
 | `GET` | `/compliance/mappings` | List control-family framework mappings |
 | `GET` | `/compliance/summary` | Map active evidence to compliance frameworks |
+| `GET` | `/reports/governance` | Generate a combined validation, summary, approval, and compliance report |
+| `GET` | `/reports/governance/markdown` | Generate the same governance report as markdown |
 | `POST` | `/risk/diff` | Classify semantic risk in a unified diff |
 
 ## Resolve Effective Policy
@@ -72,6 +74,15 @@ curl -s http://127.0.0.1:8000/approval/routes | jq .
 curl -s http://127.0.0.1:8000/compliance/mappings | jq .
 curl -s http://127.0.0.1:8000/compliance/summary | jq .
 ```
+
+## Generate Governance Report
+
+```bash
+curl -s http://127.0.0.1:8000/reports/governance | jq .
+curl -s http://127.0.0.1:8000/reports/governance/markdown | jq -r .markdown
+```
+
+Use the report endpoint for reviewer portals and protected-branch checks that need one combined view of validation, decisions, approval routing, and compliance mappings.
 
 ## Classify Risk
 

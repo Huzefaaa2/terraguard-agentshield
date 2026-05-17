@@ -78,6 +78,7 @@ flowchart TB
     Audit --> JSON[Session JSON]
     Audit --> Markdown[PR Markdown Attestation]
     Evidence --> Bundle[Signed Evidence Bundle]
+    Evidence --> Report[Generated Governance Report]
 ```
 
 ## Level 4: Deployment View
@@ -130,3 +131,4 @@ flowchart LR
 | Approval routing | Implemented foundation |
 | Policy test harness | Implemented foundation |
 | Compliance mappings | Implemented foundation |
+| Generated governance reports | Implemented foundation |

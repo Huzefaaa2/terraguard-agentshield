@@ -177,6 +177,25 @@ def test_api_maps_compliance_summary(tmp_path) -> None:
     assert "pci_dss" in payload["active_mappings"]["infrastructure-change"]["frameworks"]
 
 
+def test_api_generates_governance_report(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    audit_dir = data_dir / "audit"
+    audit = SessionAudit(session_id="api-report", tool="codex", repo=tmp_path)
+    audit.add_action(AuditAction(type="read_file", target=".env", decision="block"))
+    audit.write(audit_dir)
+    client = TestClient(create_app(data_dir=data_dir))
+
+    response = client.get("/reports/governance")
+    markdown_response = client.get("/reports/governance/markdown")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["decision_summary"]["decisions"]["block"] == 1
+    assert payload["status"] == "requires_approval"
+    assert markdown_response.status_code == 200
+    assert "TerraGuard AgentShield Check Summary" in markdown_response.json()["markdown"]
+
+
 def test_api_classifies_diff_risk() -> None:
     client = TestClient(create_app())
     diff = """diff --git a/main.tf b/main.tf

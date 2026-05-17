@@ -39,6 +39,8 @@ Signed evidence bundles are read from:
 | `GET` | `/approval/routes` | Route evidence to enterprise approver groups |
 | `GET` | `/compliance/mappings` | List control-family framework mappings |
 | `GET` | `/compliance/summary` | Map active AgentShield evidence to compliance frameworks |
+| `GET` | `/reports/governance` | Generate a combined validation, summary, approval, and compliance report |
+| `GET` | `/reports/governance/markdown` | Generate the same governance report as markdown |
 | `POST` | `/risk/diff` | Classify semantic risk in a unified diff |
 
 ## Resolve Policy Example
@@ -102,6 +104,15 @@ curl -s http://127.0.0.1:8000/compliance/mappings | jq .
 curl -s http://127.0.0.1:8000/compliance/summary | jq .
 ```
 
+## Governance Report Example
+
+```bash
+curl -s http://127.0.0.1:8000/reports/governance | jq .
+curl -s http://127.0.0.1:8000/reports/governance/markdown | jq -r .markdown
+```
+
+The report combines the active validation result, decision summary, approval routes, and compliance mapping into one payload for internal portals or pull-request checks.
+
 ## Risk Diff Example
 
 ```bash
@@ -120,6 +131,7 @@ Recommended early integrations:
 
 - expose `/policies/resolve` to platform portals so teams can inspect their effective policy;
 - expose `/evidence/bundles` to GRC tooling so signed audit records can be indexed;
+- expose `/reports/governance` to PR portals so reviewers get one combined governance view;
 - expose `/risk/diff` to internal developer portals and change workflows;
 - run the API inside a private network boundary and put enterprise authentication in front of it.
 

@@ -31,10 +31,18 @@ jobs:
             --require-policy-pack banking-regulated-ai \
             --fail-on block,require_approval \
             --output agentshield-validation.json
-          terraguard-agentshield evidence publish-github-comment \
-            --session-id "$SESSION_ID" \
-            --audit-dir .terraguard/audit
+          terraguard-agentshield report generate \
+            --audit-dir .terraguard/audit \
+            --bundle-dir .terraguard/agentshield/evidence \
+            --validation agentshield-validation.json \
+            --output agentshield-governance-report.md
+          terraguard-agentshield report publish-github-comment \
+            --audit-dir .terraguard/audit \
+            --bundle-dir .terraguard/agentshield/evidence \
+            --validation agentshield-validation.json
       - uses: actions/upload-artifact@v4
         with:
           name: agentshield-validation
-          path: agentshield-validation.json
+          path: |
+            agentshield-validation.json
+            agentshield-governance-report.md

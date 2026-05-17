@@ -61,6 +61,11 @@ from terraguard_agentshield.risk import (
     render_text_summary,
     should_fail_for_risk,
 )
+from terraguard_agentshield.reports import (
+    create_governance_report,
+    read_optional_json as read_optional_report_json,
+    render_markdown_report,
+)
 from terraguard_agentshield.runtime import RuntimeGuard
 from terraguard_agentshield.summary import (
     render_text_summary as render_decision_summary,
@@ -76,6 +81,7 @@ compliance_app = typer.Typer(help="Compliance mapping commands.")
 evidence_app = typer.Typer(help="Evidence export commands.")
 hooks_app = typer.Typer(help="AI agent hook adapters.")
 policy_app = typer.Typer(help="Policy registry commands.")
+report_app = typer.Typer(help="Generated report commands.")
 risk_app = typer.Typer(help="Semantic risk classification commands.")
 app.add_typer(agent_app, name="agent")
 app.add_typer(api_app, name="api")
@@ -84,6 +90,7 @@ app.add_typer(compliance_app, name="compliance")
 app.add_typer(evidence_app, name="evidence")
 app.add_typer(hooks_app, name="hooks")
 app.add_typer(policy_app, name="policy")
+app.add_typer(report_app, name="report")
 app.add_typer(risk_app, name="risk")
 
 
@@ -202,6 +209,116 @@ def map_compliance(
     else:
         console.print(f"[red]ERROR[/red] Unknown format: {format}")
         raise typer.Exit(code=1)
+
+
+@report_app.command("generate")
+def generate_report(
+    audit_dir: Annotated[
+        Path | None,
+        typer.Option(help="Audit directory containing session-*.json files."),
+    ] = Path(".terraguard/audit"),
+    bundle_dir: Annotated[
+        Path | None,
+        typer.Option(help="Evidence bundle directory containing *.json files."),
+    ] = Path(".terraguard/agentshield/evidence"),
+    validation: Annotated[
+        Path | None,
+        typer.Option(help="Optional validation JSON from evidence validate."),
+    ] = None,
+    format: Annotated[str, typer.Option(help="Output format: markdown or json.")] = "markdown",
+    output: Annotated[Path | None, typer.Option(help="Optional report output path.")] = None,
+    metadata: Annotated[
+        list[str] | None,
+        typer.Option(help="Additional report metadata as key=value."),
+    ] = None,
+) -> None:
+    """Generate one reviewer-friendly AgentShield governance report."""
+    try:
+        report = create_governance_report(
+            audit_dir=audit_dir,
+            bundle_dir=bundle_dir,
+            validation=read_optional_report_json(validation),
+            metadata=_parse_metadata(metadata or []),
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if format == "json":
+        content = report.to_json()
+    elif format == "markdown":
+        content = render_markdown_report(report)
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=1)
+
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(content + "\n", encoding="utf-8")
+    console.print(content)
+
+
+@report_app.command("publish-github-comment")
+def publish_github_report(
+    audit_dir: Annotated[
+        Path | None,
+        typer.Option(help="Audit directory containing session-*.json files."),
+    ] = Path(".terraguard/audit"),
+    bundle_dir: Annotated[
+        Path | None,
+        typer.Option(help="Evidence bundle directory containing *.json files."),
+    ] = Path(".terraguard/agentshield/evidence"),
+    validation: Annotated[
+        Path | None,
+        typer.Option(help="Optional validation JSON from evidence validate."),
+    ] = None,
+    repo: Annotated[str | None, typer.Option(help="GitHub repository as owner/name.")] = None,
+    pr_number: Annotated[int | None, typer.Option(help="Pull request number.")] = None,
+    token: Annotated[str | None, typer.Option(help="GitHub token. Prefer env var in CI.")] = None,
+    token_env: Annotated[str, typer.Option(help="Environment variable containing GitHub token.")] = "GITHUB_TOKEN",
+    api_url: Annotated[str, typer.Option(help="GitHub API URL.")] = "https://api.github.com",
+) -> None:
+    """Publish the generated AgentShield governance report to a GitHub PR."""
+    github_repo = repo or os.environ.get("GITHUB_REPOSITORY")
+    if not github_repo:
+        console.print("[red]ERROR[/red] GitHub repository missing. Set --repo or GITHUB_REPOSITORY.")
+        raise typer.Exit(code=1)
+
+    github_pr_number = pr_number or _github_event_pr_number()
+    if github_pr_number is None:
+        console.print("[red]ERROR[/red] Pull request number missing. Set --pr-number or GITHUB_EVENT_PATH.")
+        raise typer.Exit(code=1)
+
+    github_token = token or os.environ.get(token_env)
+    if not github_token:
+        console.print(f"[red]ERROR[/red] GitHub token missing. Set {token_env}.")
+        raise typer.Exit(code=1)
+
+    try:
+        report = create_governance_report(
+            audit_dir=audit_dir,
+            bundle_dir=bundle_dir,
+            validation=read_optional_report_json(validation),
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    body = render_markdown_report(report)
+    publisher = GitHubPRCommentPublisher(
+        github_token,
+        api_url=api_url,
+        marker="<!-- terraguard-agentshield-governance-report -->",
+    )
+    result = publisher.publish(github_repo, github_pr_number, body)
+    if result.success:
+        console.print(f"[green]OK[/green] GitHub PR governance report {result.action}")
+        if result.comment_url:
+            console.print(result.comment_url)
+        return
+
+    console.print(f"[red]ERROR[/red] GitHub PR report failed: {result.error}")
+    raise typer.Exit(code=1)
 
 
 @agent_app.command("start")

@@ -14,6 +14,10 @@ from terraguard_agentshield.compliance import (
 )
 from terraguard_agentshield.evidence import read_evidence_bundle
 from terraguard_agentshield.policy_registry import PolicyRegistry, PolicyRegistryError
+from terraguard_agentshield.reports import (
+    create_governance_report,
+    render_markdown_report,
+)
 from terraguard_agentshield.risk import SemanticRiskClassifier, should_fail_for_risk
 from terraguard_agentshield.summary import summarize_evidence
 
@@ -127,6 +131,21 @@ def create_app(
             bundle_dir=_bundle_dir(base_data_dir),
         )
         return map_summary_to_compliance(summary).to_dict()
+
+    @app.get("/reports/governance")
+    def governance_report() -> dict[str, Any]:
+        return create_governance_report(
+            audit_dir=base_data_dir / "audit",
+            bundle_dir=_bundle_dir(base_data_dir),
+        ).to_dict()
+
+    @app.get("/reports/governance/markdown")
+    def governance_report_markdown() -> dict[str, str]:
+        report = create_governance_report(
+            audit_dir=base_data_dir / "audit",
+            bundle_dir=_bundle_dir(base_data_dir),
+        )
+        return {"markdown": render_markdown_report(report)}
 
     @app.post("/risk/diff")
     def classify_diff(request: RiskDiffRequest) -> dict[str, Any]:

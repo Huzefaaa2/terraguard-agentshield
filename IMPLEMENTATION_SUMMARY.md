@@ -32,6 +32,7 @@ Implemented:
 - Dynamic approval routing from risk findings and control families
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
+- Generated governance reports for PR comments and protected-branch checks
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -56,6 +57,7 @@ terraguard-agentshield/
 |   +-- integrations.py
 |   +-- policy_testing.py
 |   +-- policy_registry.py
+|   +-- reports.py
 |   +-- runtime.py
 |   +-- summary.py
 |   +-- policies/
@@ -108,6 +110,8 @@ terraguard-agentshield evidence summary --audit-dir .terraguard/audit
 terraguard-agentshield approval route --audit-dir .terraguard/audit
 terraguard-agentshield policy test examples/policy-tests/ai-agent-baseline.yaml
 terraguard-agentshield compliance map --audit-dir .terraguard/audit
+terraguard-agentshield report generate --audit-dir .terraguard/audit --validation agentshield-validation.json
+terraguard-agentshield report publish-github-comment --audit-dir .terraguard/audit
 terraguard-agentshield api serve --data-dir .terraguard/agentshield
 ```
 
@@ -126,12 +130,12 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 81 passed
+pytest -q -> 86 passed
 ```
 
 ## Recommended Next Implementation
 
-The next recommended development step is **v0.3 Evidence Hardening**:
+The next recommended development step is **v0.3 Enterprise Workflow Management**:
 
 1. Add write-side policy management and approval workflow API.
-2. Add generated PR/check summaries that combine validation, summary, routing, and compliance mapping.
+2. Persist approval requests, decisions, approver identity, timestamps, and evidence links.

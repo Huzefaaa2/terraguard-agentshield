@@ -42,6 +42,7 @@ sequenceDiagram
 | Approval routing | Maps risk and control-family summaries to approver groups |
 | Policy test harness | Validates policy-pack behavior before rollout |
 | Compliance mappings | Maps control families to common compliance frameworks |
+| Generated reports | Combine validation, decision summaries, approval routing, and compliance mappings |
 
 ## Decisions
 

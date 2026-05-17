@@ -39,5 +39,6 @@ flowchart LR
     JSON --> Store[Evidence Storage]
     JSON --> Routes[Approval Routes]
     JSON --> Compliance[Compliance Mapping]
+    JSON --> Report[Governance Report]
     Packs --> Tests[Policy Test Harness]
 ```

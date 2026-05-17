@@ -338,7 +338,31 @@ terraguard-agentshield compliance map \
 
 Use the output to prepare evidence for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance discussions.
 
-## 20. Publish PR Attestation Comment
+## 20. Generate Governance Report
+
+```bash
+terraguard-agentshield report generate \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --validation agentshield-validation.json \
+  --format markdown \
+  --output agentshield-governance-report.md
+```
+
+This combines validation status, decision summaries, approval routes, and compliance mappings into one report for reviewers and protected-branch checks.
+
+Publish or update the same report as a GitHub PR comment:
+
+```bash
+terraguard-agentshield report publish-github-comment \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --validation agentshield-validation.json \
+  --repo owner/repo \
+  --pr-number 123
+```
+
+## 21. Publish PR Attestation Comment
 
 ```bash
 terraguard-agentshield evidence publish-github-comment \
@@ -350,7 +374,7 @@ terraguard-agentshield evidence publish-github-comment \
 
 In GitHub Actions, `GITHUB_REPOSITORY`, `GITHUB_EVENT_PATH`, and `GITHUB_TOKEN` are used automatically.
 
-## 21. Publish Evidence to Jira and ServiceNow
+## 22. Publish Evidence to Jira and ServiceNow
 
 Jira:
 
@@ -378,7 +402,7 @@ terraguard-agentshield evidence publish-servicenow <record-sys-id> \
   --audit-dir .terraguard/audit
 ```
 
-## 22. Codex and Copilot Setup
+## 23. Codex and Copilot Setup
 
 For Codex, copy `examples/codex/AGENTS.md` into the repo root.
 
@@ -386,7 +410,7 @@ For GitHub Copilot, copy `examples/copilot/copilot-instructions.md` to `.github/
 
 Then require `examples/github-actions/agentshield-required-check.yml` in branch protection.
 
-## 23. GitHub Actions Example
+## 24. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -422,7 +446,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 24. Pilot Rollout Model
+## 25. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |
@@ -432,7 +456,7 @@ jobs:
 | Week 4 | Require approval | Gate IAM, security, workflow, and production-impacting changes |
 | Week 5+ | PR attestation | Make AgentShield evidence part of protected branch review |
 
-## 25. Enterprise Operating Model
+## 26. Enterprise Operating Model
 
 Recommended controls:
 

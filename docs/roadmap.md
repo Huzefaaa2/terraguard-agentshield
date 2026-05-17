@@ -37,12 +37,15 @@ Status: **Implemented in this repo**
 - Dynamic approval routing from risk findings and control families
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
+- Generated PR/check summaries that combine validation, routing, and compliance evidence
 - CLI commands:
   - `agent start`
   - `agent exec`
   - `agent check-file`
   - `agent check-mcp`
   - `agent attest`
+  - `report generate`
+  - `report publish-github-comment`
 - Test coverage for runtime and evidence behavior
 
 ## v0.2: Real Agent Integrations
@@ -58,7 +61,7 @@ Recommended next implementation phase.
 ## v0.3: Enterprise Evidence and Approval
 
 - Write-side policy management and approval workflow API
-- Generated PR/check summaries that combine validation, routing, and compliance evidence
+- Stored approval requests, approver decisions, timestamps, and evidence links
 
 ## v0.4: Policy Governance
 

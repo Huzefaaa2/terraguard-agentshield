@@ -32,6 +32,7 @@ Implemented:
 - Dynamic approval routing from risk findings and control families
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
+- Generated governance reports for PR comments and protected-branch checks
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -57,6 +58,7 @@ Implemented:
 - [Approval Routing](Approval-Routing)
 - [Policy Test Harness](Policy-Test-Harness)
 - [Compliance Mappings](Compliance-Mappings)
+- [Generated Reports](Generated-Reports)
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
 - [Policy Inheritance](Policy-Inheritance)

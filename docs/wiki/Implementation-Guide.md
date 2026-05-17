@@ -133,6 +133,28 @@ terraguard-agentshield compliance map \
   --output agentshield-compliance-map.json
 ```
 
+## Generate Governance Report
+
+```bash
+terraguard-agentshield report generate \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --validation agentshield-validation.json \
+  --format markdown \
+  --output agentshield-governance-report.md
+```
+
+Publish the combined report to a pull request:
+
+```bash
+terraguard-agentshield report publish-github-comment \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --validation agentshield-validation.json \
+  --repo owner/repo \
+  --pr-number 123
+```
+
 ## Connect Claude Code Hooks
 
 ```bash
