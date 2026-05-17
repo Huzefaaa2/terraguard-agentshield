@@ -127,3 +127,4 @@ flowchart LR
 | Enterprise API | Implemented foundation |
 | Hardened deployment examples | Implemented foundation |
 | Decision summary | Implemented foundation |
+| Approval routing | Implemented foundation |

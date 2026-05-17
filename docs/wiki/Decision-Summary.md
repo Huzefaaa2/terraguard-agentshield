@@ -54,3 +54,5 @@ AgentShield uses explicit action metadata when available. When metadata is absen
 - Display allow/block/approval trends in an internal portal.
 - Feed control-family and risk counts into GRC evidence records.
 - Use repeated high-risk families as input for approval routing.
+
+See [Approval Routing](Approval-Routing) for reviewer group mapping.

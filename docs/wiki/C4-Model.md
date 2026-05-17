@@ -37,4 +37,5 @@ flowchart LR
     Audit --> PR[PR Attestation]
     Audit --> JSON[JSON Evidence]
     JSON --> Store[Evidence Storage]
+    JSON --> Routes[Approval Routes]
 ```

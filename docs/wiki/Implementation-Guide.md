@@ -107,6 +107,16 @@ terraguard-agentshield evidence summary \
   --output agentshield-decision-summary.json
 ```
 
+## Route Approvals
+
+```bash
+terraguard-agentshield approval route \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-approval-routes.json
+```
+
 ## Connect Claude Code Hooks
 
 ```bash

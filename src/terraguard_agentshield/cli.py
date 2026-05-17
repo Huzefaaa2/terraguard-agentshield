@@ -10,6 +10,11 @@ import typer
 from rich.console import Console
 from rich.json import JSON
 
+from terraguard_agentshield.approval import (
+    ApprovalRoutingConfig,
+    render_text_routes,
+    route_approvals,
+)
 from terraguard_agentshield.agent import AgentSessionManager
 from terraguard_agentshield.audit import AuditAction, SessionAudit
 from terraguard_agentshield.evidence import (
@@ -57,12 +62,14 @@ console = Console()
 app = typer.Typer(add_completion=False)
 agent_app = typer.Typer(help="AI agent runtime commands.")
 api_app = typer.Typer(help="Enterprise HTTP API commands.")
+approval_app = typer.Typer(help="Approval routing commands.")
 evidence_app = typer.Typer(help="Evidence export commands.")
 hooks_app = typer.Typer(help="AI agent hook adapters.")
 policy_app = typer.Typer(help="Policy registry commands.")
 risk_app = typer.Typer(help="Semantic risk classification commands.")
 app.add_typer(agent_app, name="agent")
 app.add_typer(api_app, name="api")
+app.add_typer(approval_app, name="approval")
 app.add_typer(evidence_app, name="evidence")
 app.add_typer(hooks_app, name="hooks")
 app.add_typer(policy_app, name="policy")
@@ -94,6 +101,45 @@ def serve_api(
         port=port,
         reload=reload,
     )
+
+
+@approval_app.command("route")
+def route_approval(
+    audit_dir: Annotated[
+        Path | None,
+        typer.Option(help="Audit directory containing session-*.json files."),
+    ] = Path(".terraguard/audit"),
+    bundle_dir: Annotated[
+        Path | None,
+        typer.Option(help="Evidence bundle directory containing *.json files."),
+    ] = Path(".terraguard/agentshield/evidence"),
+    routing_config: Annotated[
+        Path | None,
+        typer.Option(help="Optional YAML file overriding approver groups."),
+    ] = None,
+    format: Annotated[str, typer.Option(help="Output format: text or json.")] = "text",
+    output: Annotated[Path | None, typer.Option(help="Optional JSON output path.")] = None,
+) -> None:
+    """Route summarized AgentShield evidence to the right approver groups."""
+    config = (
+        ApprovalRoutingConfig.from_file(routing_config)
+        if routing_config
+        else ApprovalRoutingConfig()
+    )
+    summary = summarize_evidence(audit_dir=audit_dir, bundle_dir=bundle_dir)
+    result = route_approvals(summary, config=config)
+    payload = result.to_json()
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload + "\n", encoding="utf-8")
+
+    if format == "json":
+        console.print(payload)
+    elif format == "text":
+        console.print(render_text_routes(result))
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=1)
 
 
 @agent_app.command("start")

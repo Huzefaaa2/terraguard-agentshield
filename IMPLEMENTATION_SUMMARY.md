@@ -29,6 +29,7 @@ Implemented:
 - Enterprise HTTP API for policy, evidence, and risk inspection
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, action type, risk, and control family
+- Dynamic approval routing from risk findings and control families
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -45,6 +46,7 @@ Not yet implemented:
 terraguard-agentshield/
 +-- src/terraguard_agentshield/
 |   +-- agent.py
+|   +-- approval.py
 |   +-- api.py
 |   +-- audit.py
 |   +-- cli.py
@@ -99,6 +101,7 @@ terraguard-agentshield risk diff change.diff --fail-on high
 terraguard-agentshield evidence bundle --audit-dir .terraguard/audit --private-key private.pem
 terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json --public-key public.pem
 terraguard-agentshield evidence summary --audit-dir .terraguard/audit
+terraguard-agentshield approval route --audit-dir .terraguard/audit
 terraguard-agentshield api serve --data-dir .terraguard/agentshield
 ```
 
@@ -117,12 +120,12 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 65 passed
+pytest -q -> 71 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.3 Evidence Hardening**:
 
-1. Add dynamic approval routing from risk findings.
-2. Add policy test harness and compliance mappings.
+1. Add policy test harness and compliance mappings.
+2. Add write-side policy management and approval workflow API.

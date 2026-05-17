@@ -172,6 +172,16 @@ terraguard-agentshield evidence summary \
   --output agentshield-decision-summary.json
 ```
 
+Route approvals to enterprise reviewer groups:
+
+```bash
+terraguard-agentshield approval route \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-approval-routes.json
+```
+
 Send evidence to an enterprise webhook or SIEM endpoint:
 
 ```bash
@@ -297,6 +307,7 @@ More detail:
 - [Enterprise API](docs/api.md)
 - [Deployment Hardening](docs/deployment-hardening.md)
 - [Decision Summary](docs/decision-summary.md)
+- [Approval Routing](docs/approval-routing.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Policy Inheritance](docs/policy-inheritance.md)
@@ -339,12 +350,12 @@ Implemented:
 - Enterprise API for policy, evidence, and risk inspection
 - Hardened Docker, Docker Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
+- Dynamic approval routing from risk findings and control families
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Dynamic approval routing from risk findings
 - Policy test harness and compliance mappings
 
 ## References

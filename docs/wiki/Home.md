@@ -29,6 +29,7 @@ Implemented:
 - Enterprise API for policy, evidence, and risk inspection
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
+- Dynamic approval routing from risk findings and control families
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -51,6 +52,7 @@ Implemented:
 - [Enterprise API](API)
 - [Deployment Hardening](Deployment-Hardening)
 - [Decision Summary](Decision-Summary)
+- [Approval Routing](Approval-Routing)
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
 - [Policy Inheritance](Policy-Inheritance)

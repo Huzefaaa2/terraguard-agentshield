@@ -112,3 +112,5 @@ Recommended uses:
 - feed `control_families` and `risks` into GRC evidence records;
 - route repeated high-risk families to the right approver group in later workflow automation;
 - track policy tuning during audit-only pilots.
+
+Approval routing is implemented in `docs/approval-routing.md` and consumes the same summary model.

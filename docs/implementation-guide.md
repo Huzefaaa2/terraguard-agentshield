@@ -284,7 +284,35 @@ terraguard-agentshield evidence summary \
 
 Use this output for dashboards, GRC records, and later approval-routing automation.
 
-## 17. Publish PR Attestation Comment
+## 17. Route Approvals
+
+```bash
+terraguard-agentshield approval route \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-approval-routes.json
+```
+
+Optional routing override:
+
+```yaml
+default_group: central-platform-security
+approver_groups:
+  data-protection: privacy-office
+  identity-access: iam-governance
+  network-security: cloud-security-review
+```
+
+Run with overrides:
+
+```bash
+terraguard-agentshield approval route \
+  --routing-config approval-routing.yaml \
+  --format json
+```
+
+## 18. Publish PR Attestation Comment
 
 ```bash
 terraguard-agentshield evidence publish-github-comment \
@@ -296,7 +324,7 @@ terraguard-agentshield evidence publish-github-comment \
 
 In GitHub Actions, `GITHUB_REPOSITORY`, `GITHUB_EVENT_PATH`, and `GITHUB_TOKEN` are used automatically.
 
-## 18. Publish Evidence to Jira and ServiceNow
+## 19. Publish Evidence to Jira and ServiceNow
 
 Jira:
 
@@ -324,7 +352,7 @@ terraguard-agentshield evidence publish-servicenow <record-sys-id> \
   --audit-dir .terraguard/audit
 ```
 
-## 19. Codex and Copilot Setup
+## 20. Codex and Copilot Setup
 
 For Codex, copy `examples/codex/AGENTS.md` into the repo root.
 
@@ -332,7 +360,7 @@ For GitHub Copilot, copy `examples/copilot/copilot-instructions.md` to `.github/
 
 Then require `examples/github-actions/agentshield-required-check.yml` in branch protection.
 
-## 20. GitHub Actions Example
+## 21. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -368,7 +396,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 21. Pilot Rollout Model
+## 22. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |
@@ -378,7 +406,7 @@ jobs:
 | Week 4 | Require approval | Gate IAM, security, workflow, and production-impacting changes |
 | Week 5+ | PR attestation | Make AgentShield evidence part of protected branch review |
 
-## 22. Enterprise Operating Model
+## 23. Enterprise Operating Model
 
 Recommended controls:
 

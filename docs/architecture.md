@@ -149,6 +149,7 @@ Use cases:
 | Enterprise API | Inspect policies, resolved layers, evidence bundles, and diff risk through HTTP | Implemented foundation |
 | Hardened deployment examples | Docker, Compose, Nginx, and Kubernetes examples for enterprise pilots | Implemented foundation |
 | Decision summary | Aggregate audit and bundle decisions by outcome, risk, and control family | Implemented foundation |
+| Approval routing | Map risks and control families to enterprise approver groups | Implemented foundation |
 
 ## Reference Architecture
 

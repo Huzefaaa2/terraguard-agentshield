@@ -119,6 +119,30 @@ def test_api_summarizes_evidence(tmp_path) -> None:
     assert payload["control_families"]["data-protection"]["actions"] == 1
 
 
+def test_api_routes_approvals(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    audit_dir = data_dir / "audit"
+    audit = SessionAudit(session_id="api-approval", tool="codex", repo=tmp_path)
+    audit.add_action(
+        AuditAction(
+            type="execute_command",
+            target="terraform apply",
+            decision="block",
+            metadata={"control_family": "infrastructure-change", "risk": "critical"},
+        )
+    )
+    audit.write(audit_dir)
+    client = TestClient(create_app(data_dir=data_dir))
+
+    response = client.get("/approval/routes")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["route_count"] == 1
+    assert payload["routes"][0]["approver_group"] == "platform-security"
+    assert payload["routes"][0]["priority"] == "critical"
+
+
 def test_api_classifies_diff_risk() -> None:
     client = TestClient(create_app())
     diff = """diff --git a/main.tf b/main.tf

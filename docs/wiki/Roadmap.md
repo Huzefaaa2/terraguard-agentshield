@@ -21,6 +21,7 @@ Implemented:
 - Enterprise API for policy, evidence, and risk inspection
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
+- Dynamic approval routing from risk findings and control families
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
