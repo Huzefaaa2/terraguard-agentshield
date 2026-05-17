@@ -18,6 +18,7 @@ Implemented:
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
 - Policy inheritance
+- Enterprise API for policy, evidence, and risk inspection
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
@@ -31,7 +32,8 @@ Implemented:
 ## v0.3 Enterprise Evidence
 
 - Policy decision summary by risk and control family
-- Deployment hardening examples for containerized receivers
+- Deployment hardening examples for containerized receivers and the API
+- Write-side policy management and approval workflow API
 
 ## v0.4 Policy Governance
 

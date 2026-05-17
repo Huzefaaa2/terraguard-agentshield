@@ -26,6 +26,7 @@ Implemented:
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
+- Enterprise API for policy, evidence, and risk inspection
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -45,6 +46,7 @@ Implemented:
 - [Architecture](Architecture)
 - [C4 Model](C4-Model)
 - [Implementation Guide](Implementation-Guide)
+- [Enterprise API](API)
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
 - [Policy Inheritance](Policy-Inheritance)

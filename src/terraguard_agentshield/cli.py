@@ -52,11 +52,13 @@ from terraguard_agentshield.runtime import RuntimeGuard
 console = Console()
 app = typer.Typer(add_completion=False)
 agent_app = typer.Typer(help="AI agent runtime commands.")
+api_app = typer.Typer(help="Enterprise HTTP API commands.")
 evidence_app = typer.Typer(help="Evidence export commands.")
 hooks_app = typer.Typer(help="AI agent hook adapters.")
 policy_app = typer.Typer(help="Policy registry commands.")
 risk_app = typer.Typer(help="Semantic risk classification commands.")
 app.add_typer(agent_app, name="agent")
+app.add_typer(api_app, name="api")
 app.add_typer(evidence_app, name="evidence")
 app.add_typer(hooks_app, name="hooks")
 app.add_typer(policy_app, name="policy")
@@ -66,6 +68,28 @@ app.add_typer(risk_app, name="risk")
 @app.command()
 def version() -> None:
     typer.echo("terraguard-agentshield 0.1.0")
+
+
+@api_app.command("serve")
+def serve_api(
+    host: Annotated[str, typer.Option(help="API host/interface.")] = "127.0.0.1",
+    port: Annotated[int, typer.Option(help="API port.")] = 8000,
+    data_dir: Annotated[
+        Path,
+        typer.Option(help="AgentShield data directory for evidence inspection."),
+    ] = Path(".terraguard/agentshield"),
+    reload: Annotated[bool, typer.Option(help="Enable uvicorn reload for development.")] = False,
+) -> None:
+    """Run the enterprise policy, evidence, and risk inspection API."""
+    os.environ["TERRAGUARD_AGENTSHIELD_DATA_DIR"] = str(data_dir)
+    import uvicorn
+
+    uvicorn.run(
+        "terraguard_agentshield.api:app",
+        host=host,
+        port=port,
+        reload=reload,
+    )
 
 
 @agent_app.command("start")

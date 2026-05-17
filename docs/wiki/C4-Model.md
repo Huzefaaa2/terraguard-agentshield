@@ -13,11 +13,13 @@ C4Context
     System_Ext(repo, "Git Repository")
     System_Ext(mcp, "MCP Servers")
     System_Ext(siem, "SIEM / GRC")
+    System_Ext(portal, "Enterprise Portal")
     Rel(dev, agent, "Delegates task")
     Rel(agent, ags, "Requests action")
     Rel(ags, repo, "Allows, blocks, attests")
     Rel(ags, mcp, "Controls tool access")
     Rel(ags, siem, "Exports evidence")
+    Rel(portal, ags, "Inspects policy, evidence, risk")
 ```
 
 ## Container View
@@ -25,7 +27,10 @@ C4Context
 ```mermaid
 flowchart LR
     Agent[AI Coding Agent] --> CLI[CLI / Hook Adapter]
+    Portal[Enterprise Portal] --> API[Enterprise API]
     CLI --> Guard[RuntimeGuard]
+    API --> Registry
+    API --> JSON
     Guard --> Registry[Policy Registry]
     Registry --> Packs[YAML Policy Packs]
     Guard --> Audit[Audit Recorder]

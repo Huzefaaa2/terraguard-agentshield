@@ -43,6 +43,43 @@ terraguard-agentshield agent check-mcp github-enterprise \
   --policy-pack mcp-server-governance
 ```
 
+## Resolve Layered Policy
+
+```bash
+terraguard-agentshield policy resolve \
+  --enterprise banking-regulated-ai \
+  --repository terraform-ai-guardrails \
+  --output resolved-policy.json
+```
+
+## Run the Enterprise API
+
+```bash
+terraguard-agentshield api serve \
+  --host 127.0.0.1 \
+  --port 8000 \
+  --data-dir .terraguard/agentshield
+```
+
+Inspect effective policy:
+
+```bash
+curl -s http://127.0.0.1:8000/policies/resolve \
+  -H 'content-type: application/json' \
+  -d '{"enterprise":"banking-regulated-ai","repository":"terraform-ai-guardrails"}' \
+  | jq .
+```
+
+Classify diff risk:
+
+```bash
+jq -Rs '{diff: ., fail_on: "high"}' change.diff \
+  | curl -s http://127.0.0.1:8000/risk/diff \
+      -H 'content-type: application/json' \
+      -d @- \
+  | jq .
+```
+
 ## Connect Claude Code Hooks
 
 ```bash

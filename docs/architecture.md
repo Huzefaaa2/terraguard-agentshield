@@ -43,6 +43,7 @@ sequenceDiagram
 | Component | Module | Responsibility |
 | --- | --- | --- |
 | CLI | `terraguard_agentshield.cli` | User-facing commands for sessions, file checks, command checks, MCP checks, and attestation |
+| Enterprise API | `terraguard_agentshield.api` | FastAPI surface for policy, evidence, and risk inspection by enterprise systems |
 | Claude hook processor | `terraguard_agentshield.hooks` | Converts Claude Code hook payloads into AgentShield runtime decisions |
 | Session manager | `terraguard_agentshield.agent` | Creates session IDs and initializes session audit records |
 | Runtime guard | `terraguard_agentshield.runtime` | Evaluates file, command, Git, and MCP actions |
@@ -145,6 +146,7 @@ Use cases:
 | CI policy check | Require attestation and policy pack validation in GitHub Actions | Implemented |
 | GitHub PR comment publishing | Create or update reviewer-facing AgentShield attestation comments | Implemented |
 | Enterprise evidence export | Send audit to SIEM/GRC/ServiceNow/Jira | Implemented foundation |
+| Enterprise API | Inspect policies, resolved layers, evidence bundles, and diff risk through HTTP | Implemented foundation |
 
 ## Reference Architecture
 
@@ -161,5 +163,8 @@ flowchart TD
     C --> J[Session Audit]
     J --> K[PR Attestation]
     J --> L[JSON Evidence]
+    J --> N[Enterprise API]
+    D --> N
     L --> M[SIEM / GRC / Change Management]
+    N --> M
 ```

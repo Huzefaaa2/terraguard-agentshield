@@ -28,6 +28,7 @@ Core governance:
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
+- Enterprise API for policy, evidence, and risk inspection
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -52,6 +53,7 @@ CLI:
 - `terraguard-agentshield evidence publish-servicenow`
 - `terraguard-agentshield evidence bundle`
 - `terraguard-agentshield evidence verify-bundle`
+- `terraguard-agentshield api serve`
 - `terraguard-agentshield policy keygen`
 - `terraguard-agentshield policy sign`
 - `terraguard-agentshield policy verify`
@@ -76,13 +78,14 @@ Documentation:
 ### Known Limitations
 
 - Advanced semantic risk routing is roadmap work.
+- The current API is inspect-focused; write-side policy administration is roadmap work.
 
 ### Recommended Next Release
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Enterprise policy management API
 - Deployment hardening examples
+- Policy decision summaries
 
 ### Verification
 
@@ -90,7 +93,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 50 passed
+pytest -q -> 55 passed
 ```
 
 ### Links

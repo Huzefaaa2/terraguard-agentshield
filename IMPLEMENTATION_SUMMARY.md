@@ -26,6 +26,7 @@ Implemented:
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
+- Enterprise HTTP API for policy, evidence, and risk inspection
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -42,6 +43,7 @@ Not yet implemented:
 terraguard-agentshield/
 +-- src/terraguard_agentshield/
 |   +-- agent.py
+|   +-- api.py
 |   +-- audit.py
 |   +-- cli.py
 |   +-- integrations.py
@@ -91,6 +93,7 @@ terraguard-agentshield evidence publish-servicenow <sys-id> --audit-dir .terragu
 terraguard-agentshield risk diff change.diff --fail-on high
 terraguard-agentshield evidence bundle --audit-dir .terraguard/audit --private-key private.pem
 terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json --public-key public.pem
+terraguard-agentshield api serve --data-dir .terraguard/agentshield
 ```
 
 ## Policy Packs
@@ -108,15 +111,14 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 50 passed
+pytest -q -> 55 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.3 Evidence Hardening**:
 
-1. Add a lightweight enterprise policy management API.
-2. Add deployment hardening examples for containerized receivers.
-3. Add dynamic approval routing from risk findings.
-4. Add policy decision summary by risk and control family.
-5. Add policy test harness and compliance mappings.
+1. Add deployment hardening examples for containerized receivers and the API.
+2. Add dynamic approval routing from risk findings.
+3. Add policy decision summary by risk and control family.
+4. Add policy test harness and compliance mappings.

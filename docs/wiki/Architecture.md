@@ -33,6 +33,7 @@ sequenceDiagram
 | Component | Responsibility |
 | --- | --- |
 | CLI / hook adapter | Normalizes agent actions into policy checks |
+| Enterprise API | Lets enterprise systems inspect policies, evidence bundles, and diff risk |
 | RuntimeGuard | Evaluates file, command, Git, and MCP decisions |
 | Policy Registry | Loads YAML policy packs |
 | Audit Recorder | Writes JSON evidence and markdown attestation |

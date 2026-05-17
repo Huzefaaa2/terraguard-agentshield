@@ -16,12 +16,14 @@ C4Context
     System_Ext(repo, "Git Repository", "Source code, IaC, branches, pull requests")
     System_Ext(siem, "SIEM / GRC", "Audit evidence and compliance archive")
     System_Ext(mcp, "MCP Servers", "External tools and context providers")
+    System_Ext(portal, "Enterprise Portal", "Internal platform, GRC, or security workflow")
 
     Rel(developer, agent, "Delegates engineering task")
     Rel(agent, agentshield, "Requests governed action")
     Rel(agentshield, repo, "Allows, blocks, or attests changes")
     Rel(agentshield, mcp, "Allows or blocks tool access")
     Rel(agentshield, siem, "Exports evidence")
+    Rel(portal, agentshield, "Inspects policies, evidence, and risk through API")
     Rel(reviewer, repo, "Approves PR after reviewing attestation")
 ```
 
@@ -33,6 +35,7 @@ C4Container
     Person(developer, "Developer")
     System_Boundary(agentshield, "TerraGuard AgentShield") {
         Container(cli, "CLI / Hook Adapter", "Python Typer", "Normalizes AI-agent actions into policy checks")
+        Container(api, "Enterprise API", "FastAPI", "Exposes policy, evidence, and risk inspection")
         Container(runtime, "RuntimeGuard", "Python", "Evaluates file, command, Git, and MCP decisions")
         Container(registry, "Policy Registry", "YAML", "Loads built-in and custom policy packs")
         Container(audit, "Audit Recorder", "JSON/Markdown", "Writes session evidence and PR attestation")
@@ -43,7 +46,10 @@ C4Container
 
     Rel(developer, agent, "Uses")
     Rel(agent, cli, "Action request")
+    Rel(developer, api, "Inspect effective policy and evidence")
     Rel(cli, runtime, "Evaluate")
+    Rel(api, registry, "List and resolve policies")
+    Rel(api, audit, "Read signed evidence bundles")
     Rel(runtime, registry, "Load policy")
     Rel(runtime, audit, "Record decision")
     Rel(cli, repo, "Execute allowed repo/shell/git action")
@@ -55,6 +61,9 @@ C4Container
 ```mermaid
 flowchart TB
     CLI[Typer CLI Commands] --> Session[AgentSessionManager]
+    API[FastAPI Enterprise API] --> Registry
+    API --> Evidence[Evidence Bundle Reader]
+    API --> Risk[SemanticRiskClassifier]
     CLI --> Interceptor[CommandInterceptor]
     CLI --> Guard[RuntimeGuard]
     Session --> Audit[SessionAudit]
@@ -68,6 +77,7 @@ flowchart TB
     Registry --> Packs[YAML Policy Packs]
     Audit --> JSON[Session JSON]
     Audit --> Markdown[PR Markdown Attestation]
+    Evidence --> Bundle[Signed Evidence Bundle]
 ```
 
 ## Level 4: Deployment View
@@ -114,3 +124,4 @@ flowchart LR
 | GitHub PR comment publishing | Implemented |
 | GitHub Action attestation validation | Example provided |
 | SIEM/GRC/change evidence exporters | Implemented foundation |
+| Enterprise API | Implemented foundation |

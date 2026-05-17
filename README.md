@@ -196,6 +196,15 @@ terraguard-agentshield evidence publish-servicenow <record-sys-id> \
   --audit-dir .terraguard/audit
 ```
 
+Run the enterprise inspection API:
+
+```bash
+terraguard-agentshield api serve \
+  --host 127.0.0.1 \
+  --port 8000 \
+  --data-dir .terraguard/agentshield
+```
+
 Sign and verify a policy bundle:
 
 ```bash
@@ -275,6 +284,7 @@ More detail:
 - [C4 Model](docs/c4-model.md)
 - [Threat Model](docs/threat-model.md)
 - [Implementation Guide](docs/implementation-guide.md)
+- [Enterprise API](docs/api.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Policy Inheritance](docs/policy-inheritance.md)
@@ -314,13 +324,14 @@ Implemented:
 - Semantic risk classification for source and IaC diffs
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
+- Enterprise API for policy, evidence, and risk inspection
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Enterprise policy management API
 - Deployment hardening examples
+- Policy decision summaries by risk and control family
 
 ## References
 
