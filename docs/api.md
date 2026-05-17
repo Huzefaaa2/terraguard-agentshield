@@ -35,6 +35,7 @@ Signed evidence bundles are read from:
 | `POST` | `/policies/resolve` | Resolve enterprise, business unit, repository, and pack layers |
 | `GET` | `/evidence/bundles` | List signed evidence bundles |
 | `GET` | `/evidence/bundles/{bundle_id}` | Read one evidence bundle |
+| `GET` | `/evidence/summary` | Summarize audit and bundle decisions by outcome, risk, and control family |
 | `POST` | `/risk/diff` | Classify semantic risk in a unified diff |
 
 ## Resolve Policy Example
@@ -74,6 +75,14 @@ Read a bundle:
 ```bash
 curl -s http://127.0.0.1:8000/evidence/bundles/bundle-<session-id> | jq .
 ```
+
+## Decision Summary Example
+
+```bash
+curl -s http://127.0.0.1:8000/evidence/summary | jq .
+```
+
+The API summarizes `audit/session-*.json` and `evidence/*.json` under the configured AgentShield data directory.
 
 ## Risk Diff Example
 

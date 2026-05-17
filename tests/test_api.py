@@ -102,6 +102,23 @@ def test_api_lists_and_reads_evidence_bundles(tmp_path) -> None:
     assert detail_response.json()["audit"]["session_id"] == "api-session"
 
 
+def test_api_summarizes_evidence(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    audit_dir = data_dir / "audit"
+    audit = SessionAudit(session_id="api-summary", tool="claude-code", repo=tmp_path)
+    audit.add_action(AuditAction(type="read_file", target=".env", decision="block"))
+    audit.write(audit_dir)
+    client = TestClient(create_app(data_dir=data_dir))
+
+    response = client.get("/evidence/summary")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["session_count"] == 1
+    assert payload["decisions"]["block"] == 1
+    assert payload["control_families"]["data-protection"]["actions"] == 1
+
+
 def test_api_classifies_diff_risk() -> None:
     client = TestClient(create_app())
     diff = """diff --git a/main.tf b/main.tf

@@ -21,3 +21,13 @@ terraguard-agentshield evidence bundle \
 terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json \
   --public-key .terraguard/keys/evidence-public.pem
 ```
+
+## Summarize
+
+```bash
+terraguard-agentshield evidence summary \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-decision-summary.json
+```

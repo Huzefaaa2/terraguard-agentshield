@@ -27,6 +27,7 @@ Evidence bundles are read from:
 | `POST` | `/policies/resolve` | Resolve inherited policy layers |
 | `GET` | `/evidence/bundles` | List signed evidence bundles |
 | `GET` | `/evidence/bundles/{bundle_id}` | Read one evidence bundle |
+| `GET` | `/evidence/summary` | Summarize decisions by outcome, risk, and control family |
 | `POST` | `/risk/diff` | Classify semantic risk in a unified diff |
 
 ## Resolve Effective Policy
@@ -48,6 +49,12 @@ The response includes `metadata.resolved_layers`, so teams can see exactly which
 ```bash
 curl -s http://127.0.0.1:8000/evidence/bundles | jq .
 curl -s http://127.0.0.1:8000/evidence/bundles/bundle-<session-id> | jq .
+```
+
+## Summarize Decisions
+
+```bash
+curl -s http://127.0.0.1:8000/evidence/summary | jq .
 ```
 
 ## Classify Risk

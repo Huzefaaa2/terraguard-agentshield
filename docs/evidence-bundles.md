@@ -45,4 +45,5 @@ terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json \
 3. Verify signed policy packs.
 4. Run `evidence validate`.
 5. Create a signed evidence bundle.
-6. Upload the bundle as a CI artifact and route it to SIEM, Jira, or ServiceNow.
+6. Run `evidence summary` to create dashboard/GRC rollup JSON.
+7. Upload the bundle and summary as CI artifacts and route them to SIEM, Jira, or ServiceNow.

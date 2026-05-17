@@ -126,3 +126,4 @@ flowchart LR
 | SIEM/GRC/change evidence exporters | Implemented foundation |
 | Enterprise API | Implemented foundation |
 | Hardened deployment examples | Implemented foundation |
+| Decision summary | Implemented foundation |

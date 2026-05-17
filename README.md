@@ -162,6 +162,16 @@ terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json \
   --public-key .terraguard/keys/evidence-public.pem
 ```
 
+Summarize decisions for dashboards and GRC:
+
+```bash
+terraguard-agentshield evidence summary \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-decision-summary.json
+```
+
 Send evidence to an enterprise webhook or SIEM endpoint:
 
 ```bash
@@ -286,6 +296,7 @@ More detail:
 - [Implementation Guide](docs/implementation-guide.md)
 - [Enterprise API](docs/api.md)
 - [Deployment Hardening](docs/deployment-hardening.md)
+- [Decision Summary](docs/decision-summary.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Policy Inheritance](docs/policy-inheritance.md)
@@ -327,13 +338,14 @@ Implemented:
 - Policy inheritance across enterprise, business unit, and repository layers
 - Enterprise API for policy, evidence, and risk inspection
 - Hardened Docker, Docker Compose, Nginx, and Kubernetes deployment examples
+- Decision summaries by outcome, risk, and control family
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Policy decision summaries by risk and control family
 - Dynamic approval routing from risk findings
+- Policy test harness and compliance mappings
 
 ## References
 

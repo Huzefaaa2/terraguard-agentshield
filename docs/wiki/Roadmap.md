@@ -20,6 +20,7 @@ Implemented:
 - Policy inheritance
 - Enterprise API for policy, evidence, and risk inspection
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
+- Decision summaries by outcome, risk, and control family
 - JSON session audit
 - PR markdown attestation
 - CLI workflow
@@ -32,7 +33,6 @@ Implemented:
 
 ## v0.3 Enterprise Evidence
 
-- Policy decision summary by risk and control family
 - Write-side policy management and approval workflow API
 
 ## v0.4 Policy Governance

@@ -48,6 +48,10 @@ from terraguard_agentshield.risk import (
     should_fail_for_risk,
 )
 from terraguard_agentshield.runtime import RuntimeGuard
+from terraguard_agentshield.summary import (
+    render_text_summary as render_decision_summary,
+)
+from terraguard_agentshield.summary import summarize_evidence
 
 console = Console()
 app = typer.Typer(add_completion=False)
@@ -412,6 +416,35 @@ def verify_bundle(
 
     console.print(json.dumps(result.to_dict(), indent=2))
     if not result.valid:
+        raise typer.Exit(code=1)
+
+
+@evidence_app.command("summary")
+def summarize_decisions(
+    audit_dir: Annotated[
+        Path | None,
+        typer.Option(help="Audit directory containing session-*.json files."),
+    ] = Path(".terraguard/audit"),
+    bundle_dir: Annotated[
+        Path | None,
+        typer.Option(help="Evidence bundle directory containing *.json files."),
+    ] = Path(".terraguard/agentshield/evidence"),
+    format: Annotated[str, typer.Option(help="Output format: text or json.")] = "text",
+    output: Annotated[Path | None, typer.Option(help="Optional JSON output path.")] = None,
+) -> None:
+    """Summarize decisions, risks, and control families from audits and bundles."""
+    summary = summarize_evidence(audit_dir=audit_dir, bundle_dir=bundle_dir)
+    payload = summary.to_json()
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload + "\n", encoding="utf-8")
+
+    if format == "json":
+        console.print(payload)
+    elif format == "text":
+        console.print(render_decision_summary(summary))
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
         raise typer.Exit(code=1)
 
 

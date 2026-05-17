@@ -97,6 +97,16 @@ kubectl apply -f examples/deployment/kubernetes/agentshield-api.yaml
 kubectl -n agentshield rollout status deployment/agentshield-api
 ```
 
+## Summarize Decisions
+
+```bash
+terraguard-agentshield evidence summary \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-decision-summary.json
+```
+
 ## Connect Claude Code Hooks
 
 ```bash

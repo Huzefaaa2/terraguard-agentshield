@@ -33,6 +33,7 @@ Status: **Implemented in this repo**
 - Policy inheritance: enterprise -> business unit -> repo
 - Enterprise API for policy, evidence, and risk inspection
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
+- Decision summaries by outcome, risk, and control family
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -53,7 +54,6 @@ Recommended next implementation phase.
 
 ## v0.3: Enterprise Evidence and Approval
 
-- Policy decision summary by risk and control family
 - Write-side policy management and approval workflow API
 
 ## v0.4: Policy Governance

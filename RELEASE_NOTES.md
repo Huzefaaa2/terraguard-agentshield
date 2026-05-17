@@ -30,6 +30,7 @@ Core governance:
 - Policy inheritance across enterprise, business unit, and repository layers
 - Enterprise API for policy, evidence, and risk inspection
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
+- Decision summaries by outcome, risk, and control family
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -54,6 +55,7 @@ CLI:
 - `terraguard-agentshield evidence publish-servicenow`
 - `terraguard-agentshield evidence bundle`
 - `terraguard-agentshield evidence verify-bundle`
+- `terraguard-agentshield evidence summary`
 - `terraguard-agentshield api serve`
 - `terraguard-agentshield policy keygen`
 - `terraguard-agentshield policy sign`
@@ -85,8 +87,8 @@ Documentation:
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Policy decision summaries
 - Dynamic approval routing from risk findings
+- Policy test harness and compliance mappings
 
 ### Verification
 
@@ -94,7 +96,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 59 passed
+pytest -q -> 65 passed
 ```
 
 ### Links

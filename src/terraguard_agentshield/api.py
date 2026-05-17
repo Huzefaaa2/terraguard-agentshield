@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from terraguard_agentshield.evidence import read_evidence_bundle
 from terraguard_agentshield.policy_registry import PolicyRegistry, PolicyRegistryError
 from terraguard_agentshield.risk import SemanticRiskClassifier, should_fail_for_risk
+from terraguard_agentshield.summary import summarize_evidence
 
 
 DEFAULT_DATA_DIR = Path(".terraguard/agentshield")
@@ -94,6 +95,13 @@ def create_app(
                 status_code=404, detail=f"Evidence bundle '{bundle_id}' not found."
             )
         return read_evidence_bundle(bundle_path).to_dict()
+
+    @app.get("/evidence/summary")
+    def summarize_evidence_decisions() -> dict[str, Any]:
+        return summarize_evidence(
+            audit_dir=base_data_dir / "audit",
+            bundle_dir=_bundle_dir(base_data_dir),
+        ).to_dict()
 
     @app.post("/risk/diff")
     def classify_diff(request: RiskDiffRequest) -> dict[str, Any]:
