@@ -38,6 +38,7 @@ sequenceDiagram
 | Policy Registry | Loads YAML policy packs |
 | Audit Recorder | Writes JSON evidence and markdown attestation |
 | Policy Packs | Define enterprise controls |
+| Deployment examples | Provide hardened Docker, Compose, Nginx, and Kubernetes starting points |
 
 ## Decisions
 

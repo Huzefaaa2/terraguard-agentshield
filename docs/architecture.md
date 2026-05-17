@@ -147,6 +147,7 @@ Use cases:
 | GitHub PR comment publishing | Create or update reviewer-facing AgentShield attestation comments | Implemented |
 | Enterprise evidence export | Send audit to SIEM/GRC/ServiceNow/Jira | Implemented foundation |
 | Enterprise API | Inspect policies, resolved layers, evidence bundles, and diff risk through HTTP | Implemented foundation |
+| Hardened deployment examples | Docker, Compose, Nginx, and Kubernetes examples for enterprise pilots | Implemented foundation |
 
 ## Reference Architecture
 

@@ -27,6 +27,7 @@ Implemented:
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
 - Enterprise API for policy, evidence, and risk inspection
+- Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -47,6 +48,7 @@ Implemented:
 - [C4 Model](C4-Model)
 - [Implementation Guide](Implementation-Guide)
 - [Enterprise API](API)
+- [Deployment Hardening](Deployment-Hardening)
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
 - [Policy Inheritance](Policy-Inheritance)

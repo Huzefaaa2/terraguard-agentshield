@@ -131,6 +131,6 @@ export AGENTSHIELD_WEBHOOK_SECRET="replace-me"
 python examples/siem/sentinel/receiver.py
 ```
 
-## Roadmap
+## Deployment
 
-- Deployment hardening examples for containerized receivers
+For hardened container, Compose, and Kubernetes deployment examples, see `docs/deployment-hardening.md` and `examples/deployment/`.

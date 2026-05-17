@@ -27,6 +27,7 @@ Implemented:
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
 - Enterprise HTTP API for policy, evidence, and risk inspection
+- Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -51,6 +52,8 @@ terraguard-agentshield/
 |   +-- runtime.py
 |   +-- policies/
 +-- policies/
++-- examples/
+|   +-- deployment/
 +-- docs/
 |   +-- assets/
 |   +-- wiki/
@@ -111,14 +114,13 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 55 passed
+pytest -q -> 59 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.3 Evidence Hardening**:
 
-1. Add deployment hardening examples for containerized receivers and the API.
-2. Add dynamic approval routing from risk findings.
-3. Add policy decision summary by risk and control family.
-4. Add policy test harness and compliance mappings.
+1. Add dynamic approval routing from risk findings.
+2. Add policy decision summary by risk and control family.
+3. Add policy test harness and compliance mappings.

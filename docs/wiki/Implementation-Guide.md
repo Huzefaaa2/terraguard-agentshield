@@ -80,6 +80,23 @@ jq -Rs '{diff: ., fail_on: "high"}' change.diff \
   | jq .
 ```
 
+## Run the Hardened Deployment Examples
+
+Docker Compose:
+
+```bash
+cd examples/deployment
+docker compose up --build
+curl http://127.0.0.1:8080/health
+```
+
+Kubernetes:
+
+```bash
+kubectl apply -f examples/deployment/kubernetes/agentshield-api.yaml
+kubectl -n agentshield rollout status deployment/agentshield-api
+```
+
 ## Connect Claude Code Hooks
 
 ```bash

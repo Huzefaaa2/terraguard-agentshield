@@ -32,6 +32,7 @@ Status: **Implemented in this repo**
 - Signed evidence bundle format
 - Policy inheritance: enterprise -> business unit -> repo
 - Enterprise API for policy, evidence, and risk inspection
+- Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -53,7 +54,6 @@ Recommended next implementation phase.
 ## v0.3: Enterprise Evidence and Approval
 
 - Policy decision summary by risk and control family
-- Deployment hardening examples for containerized receivers and the API
 - Write-side policy management and approval workflow API
 
 ## v0.4: Policy Governance

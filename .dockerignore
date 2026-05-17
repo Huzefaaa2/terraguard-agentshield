@@ -1,0 +1,12 @@
+.git
+.github
+.pytest_cache
+.ruff_cache
+.terraguard
+.venv
+__pycache__
+*.pyc
+dist
+build
+*.egg-info
+docs/wiki

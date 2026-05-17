@@ -29,6 +29,7 @@ Core governance:
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
 - Enterprise API for policy, evidence, and risk inspection
+- Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -84,8 +85,8 @@ Documentation:
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Deployment hardening examples
 - Policy decision summaries
+- Dynamic approval routing from risk findings
 
 ### Verification
 
@@ -93,7 +94,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 55 passed
+pytest -q -> 59 passed
 ```
 
 ### Links

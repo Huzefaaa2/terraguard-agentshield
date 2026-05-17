@@ -285,6 +285,7 @@ More detail:
 - [Threat Model](docs/threat-model.md)
 - [Implementation Guide](docs/implementation-guide.md)
 - [Enterprise API](docs/api.md)
+- [Deployment Hardening](docs/deployment-hardening.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Policy Inheritance](docs/policy-inheritance.md)
@@ -325,13 +326,14 @@ Implemented:
 - Signed evidence bundle format
 - Policy inheritance across enterprise, business unit, and repository layers
 - Enterprise API for policy, evidence, and risk inspection
+- Hardened Docker, Docker Compose, Nginx, and Kubernetes deployment examples
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Deployment hardening examples
 - Policy decision summaries by risk and control family
+- Dynamic approval routing from risk findings
 
 ## References
 

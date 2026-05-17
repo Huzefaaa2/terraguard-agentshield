@@ -36,4 +36,5 @@ flowchart LR
     Guard --> Audit[Audit Recorder]
     Audit --> PR[PR Attestation]
     Audit --> JSON[JSON Evidence]
+    JSON --> Store[Evidence Storage]
 ```
