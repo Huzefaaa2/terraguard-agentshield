@@ -117,6 +117,22 @@ terraguard-agentshield approval route \
   --output agentshield-approval-routes.json
 ```
 
+## Test Policy Packs
+
+```bash
+terraguard-agentshield policy test examples/policy-tests/ai-agent-baseline.yaml
+```
+
+## Map Compliance Evidence
+
+```bash
+terraguard-agentshield compliance map \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-compliance-map.json
+```
+
 ## Connect Claude Code Hooks
 
 ```bash

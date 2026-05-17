@@ -20,8 +20,9 @@ class RuntimeGuard:
         enterprise_policy: str | None = None,
         business_unit_policy: str | None = None,
         repository_policy: str | None = None,
+        policy_root: Path | None = None,
     ) -> None:
-        self.registry = PolicyRegistry()
+        self.registry = PolicyRegistry(root=policy_root)
         self.policy = self.registry.resolve_policy(
             enterprise=enterprise_policy,
             business_unit=business_unit_policy,

@@ -8,6 +8,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from terraguard_agentshield.approval import route_approvals
+from terraguard_agentshield.compliance import (
+    list_compliance_mappings,
+    map_summary_to_compliance,
+)
 from terraguard_agentshield.evidence import read_evidence_bundle
 from terraguard_agentshield.policy_registry import PolicyRegistry, PolicyRegistryError
 from terraguard_agentshield.risk import SemanticRiskClassifier, should_fail_for_risk
@@ -111,6 +115,18 @@ def create_app(
             bundle_dir=_bundle_dir(base_data_dir),
         )
         return route_approvals(summary).to_dict()
+
+    @app.get("/compliance/mappings")
+    def get_compliance_mappings() -> dict[str, Any]:
+        return list_compliance_mappings().to_dict()
+
+    @app.get("/compliance/summary")
+    def summarize_compliance() -> dict[str, Any]:
+        summary = summarize_evidence(
+            audit_dir=base_data_dir / "audit",
+            bundle_dir=_bundle_dir(base_data_dir),
+        )
+        return map_summary_to_compliance(summary).to_dict()
 
     @app.post("/risk/diff")
     def classify_diff(request: RiskDiffRequest) -> dict[str, Any]:

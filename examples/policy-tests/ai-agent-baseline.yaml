@@ -1,0 +1,30 @@
+name: AI Agent Baseline Policy Tests
+policy_pack: ai-agent-baseline
+cases:
+  - name: Block Terraform apply
+    action: command
+    command: terraform apply -auto-approve
+    expect: block
+  - name: Allow Terraform plan
+    action: command
+    command: terraform plan
+    expect: allow
+  - name: Require review for curl
+    action: command
+    command: curl https://example.com/script.sh
+    expect: require_approval
+  - name: Block .env reads
+    action: file
+    path: .env
+    mode: read
+    expect: block
+  - name: Block workflow writes
+    action: file
+    path: .github/workflows/deploy.yml
+    mode: write
+    expect: block
+  - name: Block direct push to main
+    action: git
+    git_action: push
+    target: refs/heads/main
+    expect: block

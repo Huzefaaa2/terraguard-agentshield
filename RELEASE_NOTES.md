@@ -32,6 +32,8 @@ Core governance:
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
 - Dynamic approval routing from risk findings and control families
+- Policy test harness for command, file, Git, and MCP decisions
+- Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -58,6 +60,9 @@ CLI:
 - `terraguard-agentshield evidence verify-bundle`
 - `terraguard-agentshield evidence summary`
 - `terraguard-agentshield approval route`
+- `terraguard-agentshield policy test`
+- `terraguard-agentshield compliance list`
+- `terraguard-agentshield compliance map`
 - `terraguard-agentshield api serve`
 - `terraguard-agentshield policy keygen`
 - `terraguard-agentshield policy sign`
@@ -89,8 +94,8 @@ Documentation:
 
 v0.2 should focus on broader agent integrations and enterprise controls:
 
-- Policy test harness and compliance mappings
 - Write-side policy management and approval workflow API
+- Generated PR/check summaries
 
 ### Verification
 
@@ -98,7 +103,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 71 passed
+pytest -q -> 81 passed
 ```
 
 ### Links

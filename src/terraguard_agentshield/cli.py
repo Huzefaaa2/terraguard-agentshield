@@ -17,6 +17,11 @@ from terraguard_agentshield.approval import (
 )
 from terraguard_agentshield.agent import AgentSessionManager
 from terraguard_agentshield.audit import AuditAction, SessionAudit
+from terraguard_agentshield.compliance import (
+    list_compliance_mappings,
+    map_summary_to_compliance,
+    render_text_mappings,
+)
 from terraguard_agentshield.evidence import (
     create_evidence_bundle,
     load_audit_for_validation,
@@ -46,6 +51,10 @@ from terraguard_agentshield.policy_signing import (
     verify_policy_signature_asymmetric,
     write_signature,
 )
+from terraguard_agentshield.policy_testing import (
+    render_text_result as render_policy_test_result,
+    run_policy_test_file,
+)
 from terraguard_agentshield.policy_registry import PolicyRegistry
 from terraguard_agentshield.risk import (
     SemanticRiskClassifier,
@@ -63,6 +72,7 @@ app = typer.Typer(add_completion=False)
 agent_app = typer.Typer(help="AI agent runtime commands.")
 api_app = typer.Typer(help="Enterprise HTTP API commands.")
 approval_app = typer.Typer(help="Approval routing commands.")
+compliance_app = typer.Typer(help="Compliance mapping commands.")
 evidence_app = typer.Typer(help="Evidence export commands.")
 hooks_app = typer.Typer(help="AI agent hook adapters.")
 policy_app = typer.Typer(help="Policy registry commands.")
@@ -70,6 +80,7 @@ risk_app = typer.Typer(help="Semantic risk classification commands.")
 app.add_typer(agent_app, name="agent")
 app.add_typer(api_app, name="api")
 app.add_typer(approval_app, name="approval")
+app.add_typer(compliance_app, name="compliance")
 app.add_typer(evidence_app, name="evidence")
 app.add_typer(hooks_app, name="hooks")
 app.add_typer(policy_app, name="policy")
@@ -137,6 +148,57 @@ def route_approval(
         console.print(payload)
     elif format == "text":
         console.print(render_text_routes(result))
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=1)
+
+
+@compliance_app.command("list")
+def list_compliance(
+    format: Annotated[str, typer.Option(help="Output format: text or json.")] = "text",
+    output: Annotated[Path | None, typer.Option(help="Optional JSON output path.")] = None,
+) -> None:
+    """List AgentShield control-family compliance mappings."""
+    result = list_compliance_mappings()
+    payload = result.to_json()
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload + "\n", encoding="utf-8")
+
+    if format == "json":
+        console.print(payload)
+    elif format == "text":
+        console.print(render_text_mappings(result))
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=1)
+
+
+@compliance_app.command("map")
+def map_compliance(
+    audit_dir: Annotated[
+        Path | None,
+        typer.Option(help="Audit directory containing session-*.json files."),
+    ] = Path(".terraguard/audit"),
+    bundle_dir: Annotated[
+        Path | None,
+        typer.Option(help="Evidence bundle directory containing *.json files."),
+    ] = Path(".terraguard/agentshield/evidence"),
+    format: Annotated[str, typer.Option(help="Output format: text or json.")] = "text",
+    output: Annotated[Path | None, typer.Option(help="Optional JSON output path.")] = None,
+) -> None:
+    """Map AgentShield evidence summary to compliance framework references."""
+    summary = summarize_evidence(audit_dir=audit_dir, bundle_dir=bundle_dir)
+    result = map_summary_to_compliance(summary)
+    payload = result.to_json()
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload + "\n", encoding="utf-8")
+
+    if format == "json":
+        console.print(payload)
+    elif format == "text":
+        console.print(render_text_mappings(result))
     else:
         console.print(f"[red]ERROR[/red] Unknown format: {format}")
         raise typer.Exit(code=1)
@@ -717,6 +779,40 @@ def resolve_policy(
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(payload + "\n", encoding="utf-8")
     console.print(JSON(payload))
+
+
+@policy_app.command("test")
+def test_policy(
+    suite: Annotated[Path, typer.Argument(help="Policy test suite YAML path.")],
+    policy_root: Annotated[
+        Path | None,
+        typer.Option(help="Optional policy root containing policy pack directories."),
+    ] = None,
+    format: Annotated[str, typer.Option(help="Output format: text or json.")] = "text",
+    output: Annotated[Path | None, typer.Option(help="Optional JSON output path.")] = None,
+) -> None:
+    """Run policy behavior tests against a policy pack."""
+    try:
+        result = run_policy_test_file(suite, policy_root=policy_root)
+    except (OSError, ValueError, KeyError) as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    payload = result.to_json()
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(payload + "\n", encoding="utf-8")
+
+    if format == "json":
+        console.print(payload)
+    elif format == "text":
+        console.print(render_policy_test_result(result))
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=1)
+
+    if not result.passed:
+        raise typer.Exit(code=1)
 
 
 @policy_app.command("sign")

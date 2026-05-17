@@ -1,0 +1,18 @@
+name: MCP Server Governance Policy Tests
+policy_pack: mcp-server-governance
+cases:
+  - name: Allow approved GitHub MCP read
+    action: mcp
+    server_id: github-enterprise
+    capability: read_repo
+    expect: allow
+  - name: Block personal drive MCP
+    action: mcp
+    server_id: personal-drive-mcp
+    capability: read_file
+    expect: block
+  - name: Block unapproved MCP server
+    action: mcp
+    server_id: unknown-filesystem-mcp
+    capability: read_file
+    expect: block

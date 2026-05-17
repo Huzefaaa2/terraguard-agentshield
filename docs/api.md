@@ -37,6 +37,8 @@ Signed evidence bundles are read from:
 | `GET` | `/evidence/bundles/{bundle_id}` | Read one evidence bundle |
 | `GET` | `/evidence/summary` | Summarize audit and bundle decisions by outcome, risk, and control family |
 | `GET` | `/approval/routes` | Route evidence to enterprise approver groups |
+| `GET` | `/compliance/mappings` | List control-family framework mappings |
+| `GET` | `/compliance/summary` | Map active AgentShield evidence to compliance frameworks |
 | `POST` | `/risk/diff` | Classify semantic risk in a unified diff |
 
 ## Resolve Policy Example
@@ -92,6 +94,13 @@ curl -s http://127.0.0.1:8000/approval/routes | jq .
 ```
 
 The response maps control families and risk signals to approver groups such as platform security, cloud security, IAM security, data protection, change management, and AI governance.
+
+## Compliance Mapping Example
+
+```bash
+curl -s http://127.0.0.1:8000/compliance/mappings | jq .
+curl -s http://127.0.0.1:8000/compliance/summary | jq .
+```
 
 ## Risk Diff Example
 

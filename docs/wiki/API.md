@@ -29,6 +29,8 @@ Evidence bundles are read from:
 | `GET` | `/evidence/bundles/{bundle_id}` | Read one evidence bundle |
 | `GET` | `/evidence/summary` | Summarize decisions by outcome, risk, and control family |
 | `GET` | `/approval/routes` | Route evidence to enterprise approver groups |
+| `GET` | `/compliance/mappings` | List control-family framework mappings |
+| `GET` | `/compliance/summary` | Map active evidence to compliance frameworks |
 | `POST` | `/risk/diff` | Classify semantic risk in a unified diff |
 
 ## Resolve Effective Policy
@@ -62,6 +64,13 @@ curl -s http://127.0.0.1:8000/evidence/summary | jq .
 
 ```bash
 curl -s http://127.0.0.1:8000/approval/routes | jq .
+```
+
+## Map Compliance
+
+```bash
+curl -s http://127.0.0.1:8000/compliance/mappings | jq .
+curl -s http://127.0.0.1:8000/compliance/summary | jq .
 ```
 
 ## Classify Risk

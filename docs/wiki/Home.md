@@ -30,6 +30,8 @@ Implemented:
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
 - Dynamic approval routing from risk findings and control families
+- Policy test harness for command, file, Git, and MCP decisions
+- Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -53,6 +55,8 @@ Implemented:
 - [Deployment Hardening](Deployment-Hardening)
 - [Decision Summary](Decision-Summary)
 - [Approval Routing](Approval-Routing)
+- [Policy Test Harness](Policy-Test-Harness)
+- [Compliance Mappings](Compliance-Mappings)
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
 - [Policy Inheritance](Policy-Inheritance)

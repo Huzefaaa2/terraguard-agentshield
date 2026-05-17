@@ -30,6 +30,8 @@ Implemented:
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, action type, risk, and control family
 - Dynamic approval routing from risk findings and control families
+- Policy test harness for command, file, Git, and MCP decisions
+- Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -50,7 +52,9 @@ terraguard-agentshield/
 |   +-- api.py
 |   +-- audit.py
 |   +-- cli.py
+|   +-- compliance.py
 |   +-- integrations.py
+|   +-- policy_testing.py
 |   +-- policy_registry.py
 |   +-- runtime.py
 |   +-- summary.py
@@ -102,6 +106,8 @@ terraguard-agentshield evidence bundle --audit-dir .terraguard/audit --private-k
 terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json --public-key public.pem
 terraguard-agentshield evidence summary --audit-dir .terraguard/audit
 terraguard-agentshield approval route --audit-dir .terraguard/audit
+terraguard-agentshield policy test examples/policy-tests/ai-agent-baseline.yaml
+terraguard-agentshield compliance map --audit-dir .terraguard/audit
 terraguard-agentshield api serve --data-dir .terraguard/agentshield
 ```
 
@@ -120,12 +126,12 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 71 passed
+pytest -q -> 81 passed
 ```
 
 ## Recommended Next Implementation
 
 The next recommended development step is **v0.3 Evidence Hardening**:
 
-1. Add policy test harness and compliance mappings.
-2. Add write-side policy management and approval workflow API.
+1. Add write-side policy management and approval workflow API.
+2. Add generated PR/check summaries that combine validation, summary, routing, and compliance mapping.

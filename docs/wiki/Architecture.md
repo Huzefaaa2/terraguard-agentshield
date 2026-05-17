@@ -40,6 +40,8 @@ sequenceDiagram
 | Policy Packs | Define enterprise controls |
 | Deployment examples | Provide hardened Docker, Compose, Nginx, and Kubernetes starting points |
 | Approval routing | Maps risk and control-family summaries to approver groups |
+| Policy test harness | Validates policy-pack behavior before rollout |
+| Compliance mappings | Maps control families to common compliance frameworks |
 
 ## Decisions
 

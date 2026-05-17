@@ -35,6 +35,8 @@ Status: **Implemented in this repo**
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
 - Dynamic approval routing from risk findings and control families
+- Policy test harness for command, file, Git, and MCP decisions
+- Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - CLI commands:
   - `agent start`
   - `agent exec`
@@ -56,6 +58,7 @@ Recommended next implementation phase.
 ## v0.3: Enterprise Evidence and Approval
 
 - Write-side policy management and approval workflow API
+- Generated PR/check summaries that combine validation, routing, and compliance evidence
 
 ## v0.4: Policy Governance
 

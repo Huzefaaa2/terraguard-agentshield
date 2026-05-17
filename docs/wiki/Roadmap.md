@@ -22,6 +22,8 @@ Implemented:
 - Hardened Docker, Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
 - Dynamic approval routing from risk findings and control families
+- Policy test harness for command, file, Git, and MCP decisions
+- Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - JSON session audit
 - PR markdown attestation
 - CLI workflow

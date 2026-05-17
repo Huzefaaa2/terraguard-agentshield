@@ -150,6 +150,8 @@ Use cases:
 | Hardened deployment examples | Docker, Compose, Nginx, and Kubernetes examples for enterprise pilots | Implemented foundation |
 | Decision summary | Aggregate audit and bundle decisions by outcome, risk, and control family | Implemented foundation |
 | Approval routing | Map risks and control families to enterprise approver groups | Implemented foundation |
+| Policy test harness | Validate policy-pack behavior before rollout | Implemented foundation |
+| Compliance mappings | Map AgentShield control families to common compliance frameworks | Implemented foundation |
 
 ## Reference Architecture
 

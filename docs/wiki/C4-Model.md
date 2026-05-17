@@ -38,4 +38,6 @@ flowchart LR
     Audit --> JSON[JSON Evidence]
     JSON --> Store[Evidence Storage]
     JSON --> Routes[Approval Routes]
+    JSON --> Compliance[Compliance Mapping]
+    Packs --> Tests[Policy Test Harness]
 ```

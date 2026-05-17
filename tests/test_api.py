@@ -143,6 +143,40 @@ def test_api_routes_approvals(tmp_path) -> None:
     assert payload["routes"][0]["priority"] == "critical"
 
 
+def test_api_lists_compliance_mappings() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/compliance/mappings")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "data-protection" in payload["mappings"]
+    assert "soc2" in payload["mappings"]["data-protection"]
+
+
+def test_api_maps_compliance_summary(tmp_path) -> None:
+    data_dir = tmp_path / "data"
+    audit_dir = data_dir / "audit"
+    audit = SessionAudit(session_id="api-compliance", tool="codex", repo=tmp_path)
+    audit.add_action(
+        AuditAction(
+            type="execute_command",
+            target="terraform apply",
+            decision="block",
+            metadata={"control_family": "infrastructure-change"},
+        )
+    )
+    audit.write(audit_dir)
+    client = TestClient(create_app(data_dir=data_dir))
+
+    response = client.get("/compliance/summary")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "infrastructure-change" in payload["active_mappings"]
+    assert "pci_dss" in payload["active_mappings"]["infrastructure-change"]["frameworks"]
+
+
 def test_api_classifies_diff_risk() -> None:
     client = TestClient(create_app())
     diff = """diff --git a/main.tf b/main.tf

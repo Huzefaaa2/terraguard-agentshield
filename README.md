@@ -182,6 +182,18 @@ terraguard-agentshield approval route \
   --output agentshield-approval-routes.json
 ```
 
+Test policy behavior and map compliance evidence:
+
+```bash
+terraguard-agentshield policy test examples/policy-tests/ai-agent-baseline.yaml
+
+terraguard-agentshield compliance map \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-compliance-map.json
+```
+
 Send evidence to an enterprise webhook or SIEM endpoint:
 
 ```bash
@@ -308,6 +320,8 @@ More detail:
 - [Deployment Hardening](docs/deployment-hardening.md)
 - [Decision Summary](docs/decision-summary.md)
 - [Approval Routing](docs/approval-routing.md)
+- [Policy Test Harness](docs/policy-test-harness.md)
+- [Compliance Mappings](docs/compliance-mappings.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Policy Inheritance](docs/policy-inheritance.md)
@@ -351,12 +365,14 @@ Implemented:
 - Hardened Docker, Docker Compose, Nginx, and Kubernetes deployment examples
 - Decision summaries by outcome, risk, and control family
 - Dynamic approval routing from risk findings and control families
+- Policy test harness for command, file, Git, and MCP decisions
+- Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 
 Next:
 
-- Policy test harness and compliance mappings
+- Write-side policy management and approval workflow API
 
 ## References
 

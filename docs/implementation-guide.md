@@ -312,7 +312,33 @@ terraguard-agentshield approval route \
   --format json
 ```
 
-## 18. Publish PR Attestation Comment
+## 18. Test Policy Packs
+
+```bash
+terraguard-agentshield policy test examples/policy-tests/ai-agent-baseline.yaml
+
+terraguard-agentshield policy test examples/policy-tests/mcp-server-governance.yaml \
+  --format json \
+  --output agentshield-policy-test.json
+```
+
+Run this in CI before signing or promoting a policy pack.
+
+## 19. Map Compliance Evidence
+
+```bash
+terraguard-agentshield compliance list
+
+terraguard-agentshield compliance map \
+  --audit-dir .terraguard/audit \
+  --bundle-dir .terraguard/agentshield/evidence \
+  --format json \
+  --output agentshield-compliance-map.json
+```
+
+Use the output to prepare evidence for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance discussions.
+
+## 20. Publish PR Attestation Comment
 
 ```bash
 terraguard-agentshield evidence publish-github-comment \
@@ -324,7 +350,7 @@ terraguard-agentshield evidence publish-github-comment \
 
 In GitHub Actions, `GITHUB_REPOSITORY`, `GITHUB_EVENT_PATH`, and `GITHUB_TOKEN` are used automatically.
 
-## 19. Publish Evidence to Jira and ServiceNow
+## 21. Publish Evidence to Jira and ServiceNow
 
 Jira:
 
@@ -352,7 +378,7 @@ terraguard-agentshield evidence publish-servicenow <record-sys-id> \
   --audit-dir .terraguard/audit
 ```
 
-## 20. Codex and Copilot Setup
+## 22. Codex and Copilot Setup
 
 For Codex, copy `examples/codex/AGENTS.md` into the repo root.
 
@@ -360,7 +386,7 @@ For GitHub Copilot, copy `examples/copilot/copilot-instructions.md` to `.github/
 
 Then require `examples/github-actions/agentshield-required-check.yml` in branch protection.
 
-## 21. GitHub Actions Example
+## 23. GitHub Actions Example
 
 Create `.github/workflows/agentshield-attestation.yml`:
 
@@ -396,7 +422,7 @@ jobs:
           path: agentshield-attestation.md
 ```
 
-## 22. Pilot Rollout Model
+## 24. Pilot Rollout Model
 
 | Stage | Policy mode | Objective |
 | --- | --- | --- |
@@ -406,7 +432,7 @@ jobs:
 | Week 4 | Require approval | Gate IAM, security, workflow, and production-impacting changes |
 | Week 5+ | PR attestation | Make AgentShield evidence part of protected branch review |
 
-## 23. Enterprise Operating Model
+## 25. Enterprise Operating Model
 
 Recommended controls:
 

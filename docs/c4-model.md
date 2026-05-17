@@ -128,3 +128,5 @@ flowchart LR
 | Hardened deployment examples | Implemented foundation |
 | Decision summary | Implemented foundation |
 | Approval routing | Implemented foundation |
+| Policy test harness | Implemented foundation |
+| Compliance mappings | Implemented foundation |
