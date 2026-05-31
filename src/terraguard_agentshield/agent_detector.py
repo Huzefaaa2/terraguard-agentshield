@@ -1,0 +1,341 @@
+"""
+AI Agent Detector — Signal-based detection of AI-agent-authored changes.
+
+Detects whether a pull request or change appears to have been produced or assisted
+by an autonomous or semi-autonomous AI coding agent (Copilot, Codex, Claude, Cursor, etc.)
+using weighted deterministic signals. No external services, no LLM calls.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+
+@dataclass(frozen=True)
+class AgentSignal:
+    """A single weighted signal indicating possible AI-agent authorship."""
+
+    source: str
+    """Signal source: 'branch', 'commit_message', 'author', 'pr_title', 'pr_body', 'audit_metadata'."""
+    value: str
+    """The detected value or pattern."""
+    weight: int
+    """Signal weight: 0-100."""
+    agent_type: str | None = None
+    """Inferred agent type: 'github-copilot', 'openai-codex', 'claude-code', 'cursor', 'generic-ai-agent', 'automation-bot', 'unknown'."""
+    description: str | None = None
+    """Human-readable description of the signal."""
+
+
+@dataclass(frozen=True)
+class AgentDetectionResult:
+    """Result of AI agent detection analysis."""
+
+    detected: bool
+    """Whether an AI agent is likely involved."""
+    confidence: str
+    """Confidence level: 'high', 'medium', 'low', 'none'."""
+    score: int
+    """Numeric score: 0-100."""
+    agent_type: str | None
+    """Primary inferred agent type."""
+    signals: list[AgentSignal] = field(default_factory=list)
+    """All detected signals."""
+    recommendation: str | None = None
+    """Actionable recommendation for reviewers."""
+
+    def to_json(self) -> str:
+        """Serialize to JSON string."""
+        return json.dumps(self.to_dict(), indent=2)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to dictionary."""
+        return {
+            "detected": self.detected,
+            "confidence": self.confidence,
+            "score": self.score,
+            "agent_type": self.agent_type,
+            "signals": [
+                {
+                    "source": s.source,
+                    "value": s.value,
+                    "weight": s.weight,
+                    "agent_type": s.agent_type,
+                    "description": s.description,
+                }
+                for s in self.signals
+            ],
+            "recommendation": self.recommendation,
+        }
+
+
+def detect_ai_agent_change(
+    repo: Path = Path("."),
+    branch: str | None = None,
+    pr_title: str | None = None,
+    pr_body: str | None = None,
+    event_path: Path | None = None,
+    commit_messages: list[str] | None = None,
+    authors: list[str] | None = None,
+    audit_dir: Path | None = None,
+) -> AgentDetectionResult:
+    """
+    Detect whether a pull request or change appears to be AI-agent-authored.
+
+    Args:
+        repo: Repository path (for audit file scanning).
+        branch: Git branch name.
+        pr_title: Pull request title.
+        pr_body: Pull request body/description.
+        event_path: GitHub event JSON file path.
+        commit_messages: List of commit messages.
+        authors: List of commit author identities (emails, logins).
+        audit_dir: AgentShield audit directory (.terraguard/audit) to scan for metadata.
+
+    Returns:
+        AgentDetectionResult with detected flag, confidence, score, agent_type, signals, and recommendation.
+    """
+    signals: list[AgentSignal] = []
+
+    # 1. High-confidence branch name signals
+    if branch:
+        branch_lower = branch.lower()
+        branch_patterns = [
+            ("copilot/*", "github-copilot", 45),
+            ("codex/*", "openai-codex", 45),
+            ("claude/*", "claude-code", 45),
+            ("cursor/*", "cursor", 45),
+            ("ai-agent/*", "generic-ai-agent", 40),
+            ("agents/*", "generic-ai-agent", 35),
+        ]
+        for pattern_glob, agent, weight in branch_patterns:
+            pattern = pattern_glob.replace("*", "[^/]*")
+            if re.match(f"^{pattern}$", branch_lower):
+                signals.append(
+                    AgentSignal(
+                        source="branch",
+                        value=branch,
+                        weight=weight,
+                        agent_type=agent,
+                        description=f"Branch name matches known {agent} pattern.",
+                    )
+                )
+                break
+
+    # 2. High-confidence commit message signals
+    if commit_messages:
+        commit_patterns = {
+            r"(Generated with Claude Code|Claude Code generated|created by Claude|claude-generated)": (
+                "claude-code",
+                50,
+            ),
+            r"Co-authored-by: GitHub Copilot": ("github-copilot", 50),
+            r"GitHub Copilot": ("github-copilot", 45),
+            r"OpenAI Codex|Codex CLI": ("openai-codex", 45),
+            r"Cursor": ("cursor", 40),
+            r"AI-generated|generated by an AI agent|created by copilot|created by codex": (
+                "generic-ai-agent",
+                40,
+            ),
+        }
+        for message in commit_messages:
+            for pattern, (agent, weight) in commit_patterns.items():
+                if re.search(pattern, message, re.IGNORECASE):
+                    signals.append(
+                        AgentSignal(
+                            source="commit_message",
+                            value=message[:60] + ("..." if len(message) > 60 else ""),
+                            weight=weight,
+                            agent_type=agent,
+                            description=f"Commit message indicates {agent} participation.",
+                        )
+                    )
+
+    # 3. High-confidence author/email signals
+    if authors:
+        for author in authors:
+            author_lower = author.lower()
+            author_patterns = {
+                r"github[- ]?copilot": ("github-copilot", 50),
+                r"copilot": ("github-copilot", 40),
+                r"codex": ("openai-codex", 40),
+                r"claude": ("claude-code", 40),
+                r"cursor": ("cursor", 40),
+            }
+            for pattern, (agent, weight) in author_patterns.items():
+                if re.search(pattern, author_lower):
+                    signals.append(
+                        AgentSignal(
+                            source="author",
+                            value=author,
+                            weight=weight,
+                            agent_type=agent,
+                            description=f"Author/committer matches {agent} pattern.",
+                        )
+                    )
+                    break
+
+    # 4. AgentShield audit metadata signals
+    if audit_dir:
+        audit_signals = _scan_audit_metadata(audit_dir)
+        signals.extend(audit_signals)
+
+    # 5. Medium-confidence PR title/body signals
+    if pr_title:
+        title_patterns = {
+            r"(agent|AI assisted|AI-assisted|AI-generated|copilot suggested|codex generated)": (
+                "generic-ai-agent",
+                25,
+            ),
+        }
+        for pattern, (agent, weight) in title_patterns.items():
+            if re.search(pattern, pr_title, re.IGNORECASE):
+                signals.append(
+                    AgentSignal(
+                        source="pr_title",
+                        value=pr_title,
+                        weight=weight,
+                        agent_type=agent,
+                        description="PR title mentions AI-assisted authorship.",
+                    )
+                )
+
+    if pr_body:
+        body_patterns = {
+            r"(agent|AI assisted|AI-assisted|AI-generated|copilot suggested|codex generated)": (
+                "generic-ai-agent",
+                20,
+            ),
+        }
+        for pattern, (agent, weight) in body_patterns.items():
+            if re.search(pattern, pr_body, re.IGNORECASE):
+                signals.append(
+                    AgentSignal(
+                        source="pr_body",
+                        value=pr_body[:100] + ("..." if len(pr_body) > 100 else ""),
+                        weight=weight,
+                        agent_type=agent,
+                        description="PR body mentions AI-assisted authorship.",
+                    )
+                )
+
+    # 6. Calculate score and determine confidence
+    score = sum(s.weight for s in signals)
+
+    # Determine if Dependabot/Renovate alone without other AI signals
+    automation_only = all(s.agent_type == "automation-bot" for s in signals)
+
+    if automation_only and signals:
+        # Dependabot/Renovate alone do not count as AI coding agent
+        detected = False
+        confidence = "low"
+        agent_type = "automation-bot"
+        recommendation = (
+            "Dependabot/Renovate are automation tools, not AI coding agents. "
+            "No AI-agent governance required for this change."
+        )
+    else:
+        if score >= 80:
+            detected = True
+            confidence = "high"
+        elif score >= 50:
+            detected = True
+            confidence = "medium"
+        elif score >= 25:
+            detected = True
+            confidence = "low"
+        else:
+            detected = False
+            confidence = "none"
+
+        # Determine primary agent type from highest-weight signal
+        agent_type = None
+        if signals:
+            strongest = max(signals, key=lambda s: s.weight)
+            agent_type = strongest.agent_type or "unknown"
+
+        recommendation = None
+        if detected:
+            recommendation = "Review this pull request with AI-agent governance controls enabled."
+
+    return AgentDetectionResult(
+        detected=detected,
+        confidence=confidence,
+        score=min(score, 100),
+        agent_type=agent_type,
+        signals=signals,
+        recommendation=recommendation,
+    )
+
+
+def _scan_audit_metadata(audit_dir: Path) -> list[AgentSignal]:
+    """
+    Scan AgentShield audit metadata files for agent signals.
+
+    Looks for session-*.json files containing tool, agent, or metadata.tool fields.
+    """
+    signals: list[AgentSignal] = []
+    if not audit_dir.exists():
+        return signals
+
+    for audit_file in audit_dir.glob("session-*.json"):
+        try:
+            data = json.loads(audit_file.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                continue
+
+            # Check direct fields: tool, agent, tool_name
+            tool = data.get("tool") or data.get("agent") or data.get("tool_name")
+            if tool:
+                agent_type = _map_tool_to_agent(tool)
+                if agent_type:
+                    signals.append(
+                        AgentSignal(
+                            source="audit_metadata",
+                            value=tool,
+                            weight=60,
+                            agent_type=agent_type,
+                            description=f"AgentShield audit metadata detected {agent_type}.",
+                        )
+                    )
+
+            # Check metadata.tool
+            metadata = data.get("metadata", {})
+            if isinstance(metadata, dict):
+                tool = metadata.get("tool")
+                if tool:
+                    agent_type = _map_tool_to_agent(tool)
+                    if agent_type:
+                        signals.append(
+                            AgentSignal(
+                                source="audit_metadata",
+                                value=tool,
+                                weight=55,
+                                agent_type=agent_type,
+                                description=f"AgentShield audit metadata detected {agent_type}.",
+                            )
+                        )
+        except (json.JSONDecodeError, OSError):
+            continue
+
+    return signals
+
+
+def _map_tool_to_agent(tool: str) -> str | None:
+    """Map tool name to agent type."""
+    tool_lower = tool.lower()
+    if "copilot" in tool_lower:
+        return "github-copilot"
+    if "codex" in tool_lower:
+        return "openai-codex"
+    if "claude" in tool_lower or "claude-code" in tool_lower:
+        return "claude-code"
+    if "cursor" in tool_lower:
+        return "cursor"
+    if "bot" in tool_lower or "renovate" in tool_lower or "dependabot" in tool_lower:
+        return "automation-bot"
+    return None
