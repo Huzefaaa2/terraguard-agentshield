@@ -16,7 +16,11 @@ from terraguard_agentshield.approval import (
     route_approvals,
 )
 from terraguard_agentshield.agent import AgentSessionManager
-from terraguard_agentshield.agent_detector import detect_ai_agent_change
+from terraguard_agentshield.agent_detector import (
+    detect_ai_agent_change,
+    render_detection_markdown,
+    render_detection_text,
+)
 from terraguard_agentshield.audit import AuditAction, SessionAudit
 from terraguard_agentshield.compliance import (
     list_compliance_mappings,
@@ -31,7 +35,6 @@ from terraguard_agentshield.evidence import (
     verify_evidence_bundle,
     write_validation_result,
 )
-from terraguard_agentshield.explain import explain_risk_summary
 from terraguard_agentshield.hooks import ClaudeHookProcessor
 from terraguard_agentshield.integrations import (
     CommandInterceptor,
@@ -58,12 +61,17 @@ from terraguard_agentshield.policy_testing import (
     run_policy_test_file,
 )
 from terraguard_agentshield.policy_registry import PolicyRegistry
-from terraguard_agentshield.pr_guardian import PRGuardianConfig, run_pr_guardian
 from terraguard_agentshield.risk import (
     SemanticRiskClassifier,
     render_text_summary,
     should_fail_for_risk,
 )
+from terraguard_agentshield.explain import (
+    explain_from_file,
+    render_explanation_markdown,
+    render_explanation_text,
+)
+from terraguard_agentshield.pr_guardian import PRGuardianConfig, run_pr_guardian
 from terraguard_agentshield.reports import (
     create_governance_report,
     read_optional_json as read_optional_report_json,
@@ -343,45 +351,6 @@ def start_agent(
     console.print(f"[dim]Policy pack: {session.policy_pack or 'ai-agent-baseline'}[/dim]")
 
 
-@agent_app.command("detect")
-def detect_agent(
-    repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
-    branch: Annotated[str | None, typer.Option(help="Git branch name.")] = None,
-    pr_title: Annotated[str | None, typer.Option(help="Pull request title.")] = None,
-    pr_body_file: Annotated[Path | None, typer.Option(help="File containing PR body.")] = None,
-    event_path: Annotated[Path | None, typer.Option(help="GitHub event JSON file path.")] = None,
-    audit_dir: Annotated[Path | None, typer.Option(help="Audit directory for metadata.")] = None,
-    format: Annotated[str, typer.Option(help="Output format: text, json, or markdown.")] = "text",
-    output: Annotated[Path | None, typer.Option(help="Optional output path.")] = None,
-) -> None:
-    """Detect whether a pull request appears to be AI-agent-authored."""
-    pr_body = None
-    if pr_body_file:
-        pr_body = pr_body_file.read_text(encoding="utf-8")
-
-    result = detect_ai_agent_change(
-        repo=repo,
-        branch=branch,
-        pr_title=pr_title,
-        pr_body=pr_body,
-        event_path=event_path,
-        audit_dir=audit_dir,
-    )
-
-    if format == "json":
-        content = result.to_json()
-    elif format == "markdown":
-        content = _render_agent_detection_markdown(result)
-    else:  # text
-        content = _render_agent_detection_text(result)
-
-    if output:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(content + "\n", encoding="utf-8")
-
-    console.print(content)
-
-
 @agent_app.command("exec")
 def exec_command(
     command: Annotated[str, typer.Argument(help="Command to execute.")],
@@ -533,6 +502,57 @@ def generate_attestation(
         raise typer.Exit(code=1)
 
 
+@agent_app.command("detect")
+def detect_agent(
+    repo: Annotated[Path, typer.Option(help="Repository path.")] = Path("."),
+    branch: Annotated[str | None, typer.Option(help="Pull request branch name.")] = None,
+    pr_title: Annotated[str | None, typer.Option(help="Pull request title.")] = None,
+    pr_body_file: Annotated[
+        Path | None,
+        typer.Option(help="Optional file containing pull request body text."),
+    ] = None,
+    event_path: Annotated[
+        Path | None,
+        typer.Option(help="GitHub event JSON path. Defaults to GITHUB_EVENT_PATH."),
+    ] = None,
+    audit_dir: Annotated[
+        Path | None,
+        typer.Option(help="AgentShield audit directory to scan for tool metadata."),
+    ] = None,
+    format: Annotated[str, typer.Option(help="Output format: text, json, or markdown.")] = "text",
+    output: Annotated[Path | None, typer.Option(help="Optional output path.")] = None,
+) -> None:
+    """Detect likely AI coding-agent involvement from PR and audit signals."""
+    try:
+        pr_body = pr_body_file.read_text(encoding="utf-8") if pr_body_file else None
+        result = detect_ai_agent_change(
+            repo=repo,
+            branch=branch,
+            pr_title=pr_title,
+            pr_body=pr_body,
+            event_path=event_path or _github_event_path(),
+            audit_dir=audit_dir,
+        )
+    except OSError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=2) from exc
+
+    if format == "json":
+        content = result.to_json()
+    elif format == "markdown":
+        content = render_detection_markdown(result)
+    elif format == "text":
+        content = render_detection_text(result)
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=2)
+
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(content + "\n", encoding="utf-8")
+    console.print(content)
+
+
 @hooks_app.command("claude")
 def claude_hook(
     policy_pack: Annotated[str, typer.Option(help="Policy pack ID.")] = "ai-agent-baseline",
@@ -561,67 +581,6 @@ def claude_hook(
     )
     decision = processor.process(payload)
     typer.echo(json.dumps(decision.output))
-
-
-@pr_app.command("guard")
-def pr_guard(
-    diff: Annotated[Path, typer.Option(help="Path to unified diff file.")],
-    repo: Annotated[str | None, typer.Option(help="GitHub repository as owner/name.")] = None,
-    pr_number: Annotated[int | None, typer.Option(help="Pull request number.")] = None,
-    policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = None,
-    fail_on: Annotated[str, typer.Option(help="Failure threshold: low, medium, high, critical.")] = "high",
-    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
-    bundle_dir: Annotated[Path, typer.Option(help="Evidence bundle directory.")] = Path(".terraguard/agentshield/evidence"),
-    output_dir: Annotated[Path, typer.Option(help="Report output directory.")] = Path(".terraguard/agentshield/pr-guardian"),
-    publish_comment: Annotated[bool, typer.Option(help="Publish result to GitHub PR comment.")] = False,
-    token: Annotated[str | None, typer.Option(help="GitHub token. Prefer env var in CI.")] = None,
-    token_env: Annotated[str, typer.Option(help="Environment variable containing GitHub token.")] = "GITHUB_TOKEN",
-    api_url: Annotated[str, typer.Option(help="GitHub API URL.")] = "https://api.github.com",
-    dry_run: Annotated[bool, typer.Option(help="Dry run: print output without publishing.")] = False,
-    format: Annotated[str, typer.Option(help="Output format: text, json, or markdown.")] = "markdown",
-) -> None:
-    """Execute AgentShield PR Guardian: AI detection + risk + explanation."""
-    github_repo = repo or os.environ.get("GITHUB_REPOSITORY")
-    github_pr_number = pr_number or _github_event_pr_number()
-    github_token = token or os.environ.get(token_env) if publish_comment else None
-
-    try:
-        config = PRGuardianConfig(
-            diff_path=diff,
-            repo=github_repo,
-            pr_number=github_pr_number,
-            policy_pack=policy_pack,
-            fail_on=fail_on,
-            audit_dir=audit_dir,
-            bundle_dir=bundle_dir,
-            output_dir=output_dir,
-            publish_comment=publish_comment and not dry_run,
-            github_token=github_token,
-            github_api_url=api_url,
-            dry_run=dry_run,
-        )
-        result = run_pr_guardian(config)
-    except (FileNotFoundError, ValueError, RuntimeError) as exc:
-        console.print(f"[red]ERROR[/red] {exc}")
-        raise typer.Exit(code=2) from exc
-
-    # Output
-    if format == "json":
-        output_text = json.dumps(result.__dict__, indent=2, default=str)
-    else:
-        output_text = result.markdown_report
-
-    console.print(output_text)
-
-    if result.json_report_path:
-        console.print(f"[dim]JSON report: {result.json_report_path}[/dim]")
-    if result.markdown_report_path:
-        console.print(f"[dim]Markdown report: {result.markdown_report_path}[/dim]")
-    if result.pr_comment_url:
-        console.print(f"[dim]PR comment: {result.pr_comment_url}[/dim]")
-
-    if result.should_fail:
-        raise typer.Exit(code=1)
 
 
 @evidence_app.command("send-webhook")
@@ -912,37 +871,6 @@ def publish_servicenow(
     raise typer.Exit(code=1)
 
 
-@policy_app.command("explain")
-def explain_policy(
-    risk: Annotated[Path, typer.Option(help="Path to risk JSON file.")],
-    policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = None,
-    fail_on: Annotated[str, typer.Option(help="Failure threshold: low, medium, high, critical.")] = "high",
-    format: Annotated[str, typer.Option(help="Output format: text, json, or markdown.")] = "markdown",
-    output: Annotated[Path | None, typer.Option(help="Optional output path.")] = None,
-) -> None:
-    """Explain a risk summary using Policy Explain Mode."""
-    try:
-        risk_data = json.loads(risk.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        console.print(f"[red]ERROR[/red] Failed to read risk file: {exc}")
-        raise typer.Exit(code=1) from exc
-
-    explanation = explain_risk_summary(risk_data, policy_pack=policy_pack, fail_on=fail_on)
-
-    if format == "json":
-        content = explanation.to_json()
-    elif format == "markdown":
-        content = _render_policy_explanation_markdown(explanation)
-    else:  # text
-        content = _render_policy_explanation_text(explanation)
-
-    if output:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(content + "\n", encoding="utf-8")
-
-    console.print(content)
-
-
 @risk_app.command("diff")
 def classify_diff(
     diff_path: Annotated[
@@ -983,6 +911,93 @@ def classify_diff(
             raise typer.Exit(code=1) from exc
         if should_fail:
             raise typer.Exit(code=1)
+
+
+@pr_app.command("guard")
+def guard_pr(
+    diff: Annotated[Path, typer.Option("--diff", help="Unified pull request diff path.")],
+    repo: Annotated[
+        str | None,
+        typer.Option(help="GitHub repository as owner/name. Defaults to GITHUB_REPOSITORY."),
+    ] = None,
+    pr_number: Annotated[
+        int | None,
+        typer.Option(help="Pull request number. Defaults from GITHUB_EVENT_PATH."),
+    ] = None,
+    policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = None,
+    fail_on: Annotated[
+        str,
+        typer.Option(help="Fail when max risk is at or above: low, medium, high, critical."),
+    ] = "high",
+    audit_dir: Annotated[Path, typer.Option(help="Audit directory.")] = Path(".terraguard/audit"),
+    bundle_dir: Annotated[
+        Path,
+        typer.Option(help="Evidence bundle directory."),
+    ] = Path(".terraguard/agentshield/evidence"),
+    output_dir: Annotated[
+        Path,
+        typer.Option(help="PR Guardian output artifact directory."),
+    ] = Path(".terraguard/agentshield/pr-guardian"),
+    publish_comment: Annotated[
+        bool,
+        typer.Option("--publish-comment/--no-publish-comment", help="Publish GitHub PR comment."),
+    ] = False,
+    github_token_env: Annotated[
+        str,
+        typer.Option(help="Environment variable containing GitHub token."),
+    ] = "GITHUB_TOKEN",
+    github_api_url: Annotated[str, typer.Option(help="GitHub API URL.")] = "https://api.github.com",
+    dry_run: Annotated[bool, typer.Option(help="Render artifacts without calling GitHub.")] = False,
+    format: Annotated[str, typer.Option(help="Output format: text, json, or markdown.")] = "markdown",
+) -> None:
+    """Run AgentShield PR Guardian against a pull request diff."""
+    try:
+        result = run_pr_guardian(
+            PRGuardianConfig(
+                diff_path=diff,
+                repo=repo or os.environ.get("GITHUB_REPOSITORY"),
+                pr_number=pr_number or _github_event_pr_number(),
+                policy_pack=policy_pack,
+                fail_on=fail_on,
+                audit_dir=audit_dir,
+                bundle_dir=bundle_dir,
+                output_dir=output_dir,
+                publish_comment=publish_comment,
+                github_token=os.environ.get(github_token_env),
+                github_api_url=github_api_url,
+                dry_run=dry_run,
+                event_path=_github_event_path(),
+            )
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=2) from exc
+    except RuntimeError as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if format == "json":
+        console.print(result.to_json())
+    elif format == "markdown":
+        console.print(result.markdown_report)
+    elif format == "text":
+        console.print(
+            "\n".join(
+                [
+                    f"Decision: {result.decision}",
+                    f"Max risk: {result.max_risk}",
+                    f"Should fail: {result.should_fail}",
+                    f"AI agent detected: {result.ai_agent_detected}",
+                    f"Artifacts: {result.markdown_report_path}",
+                ]
+            )
+        )
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=2)
+
+    if result.should_fail:
+        raise typer.Exit(code=1)
 
 
 @policy_app.command("list")
@@ -1066,6 +1081,40 @@ def test_policy(
 
     if not result.passed:
         raise typer.Exit(code=1)
+
+
+@policy_app.command("explain")
+def explain_policy(
+    risk: Annotated[Path, typer.Option(help="Risk summary JSON from risk diff.")],
+    policy_pack: Annotated[str | None, typer.Option(help="Policy pack ID.")] = None,
+    fail_on: Annotated[
+        str,
+        typer.Option(help="Failure threshold: low, medium, high, or critical."),
+    ] = "high",
+    format: Annotated[str, typer.Option(help="Output format: text, json, or markdown.")] = "markdown",
+    output: Annotated[Path | None, typer.Option(help="Optional output path.")] = None,
+) -> None:
+    """Explain why AgentShield blocked, warned, or required approval."""
+    try:
+        explanation = explain_from_file(risk, policy_pack=policy_pack, fail_on=fail_on)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        console.print(f"[red]ERROR[/red] {exc}")
+        raise typer.Exit(code=2) from exc
+
+    if format == "json":
+        content = explanation.to_json()
+    elif format == "markdown":
+        content = render_explanation_markdown(explanation)
+    elif format == "text":
+        content = render_explanation_text(explanation)
+    else:
+        console.print(f"[red]ERROR[/red] Unknown format: {format}")
+        raise typer.Exit(code=2)
+
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(content + "\n", encoding="utf-8")
+    console.print(content)
 
 
 @policy_app.command("sign")
@@ -1173,6 +1222,14 @@ def _github_event_pr_number() -> int | None:
     return int(number) if number is not None else None
 
 
+def _github_event_path() -> Path | None:
+    event_path = os.environ.get("GITHUB_EVENT_PATH")
+    if not event_path:
+        return None
+    path = Path(event_path)
+    return path if path.exists() else None
+
+
 def _read_optional_json(path: Path | None) -> dict[str, object] | None:
     if not path:
         return None
@@ -1190,84 +1247,3 @@ def _parse_metadata(items: list[str]) -> dict[str, str]:
         key, value = item.split("=", 1)
         parsed[key.strip()] = value.strip()
     return parsed
-
-
-def _render_agent_detection_markdown(result: object) -> str:
-    """Render agent detection result as Markdown."""
-    lines = [
-        "## AI Agent Detection",
-        "",
-        f"**Detected:** {'Yes' if result.detected else 'No'}",
-        f"**Confidence:** {result.confidence.title()}",
-        f"**Score:** {result.score}",
-    ]
-    if result.agent_type:
-        lines.append(f"**Agent Type:** {result.agent_type.replace('-', ' ').title()}")
-    lines.append("")
-    if result.signals:
-        lines.append("### Signals")
-        lines.append("")
-        lines.append("| Source | Value | Weight | Agent Type |")
-        lines.append("| --- | --- | ---: | --- |")
-        for signal in result.signals:
-            lines.append(f"| {signal.source} | {signal.value[:40]} | {signal.weight} | {signal.agent_type or '—'} |")
-        lines.append("")
-    if result.recommendation:
-        lines.append("### Recommendation")
-        lines.append("")
-        lines.append(result.recommendation)
-    return "\n".join(lines)
-
-
-def _render_agent_detection_text(result: object) -> str:
-    """Render agent detection result as text."""
-    lines = [
-        f"AI Agent Detected: {'Yes' if result.detected else 'No'}",
-        f"Confidence: {result.confidence.upper()}",
-        f"Score: {result.score}/100",
-    ]
-    if result.agent_type:
-        lines.append(f"Agent Type: {result.agent_type}")
-    if result.recommendation:
-        lines.append(f"Recommendation: {result.recommendation}")
-    return "\n".join(lines)
-
-
-def _render_policy_explanation_markdown(explanation: object) -> str:
-    """Render policy explanation as Markdown."""
-    lines = [
-        "# AgentShield Policy Explanation",
-        "",
-        f"**Decision:** {explanation.decision.replace('_', ' ').title()}",
-        f"**Max Risk:** {explanation.max_risk.title()}",
-    ]
-    if explanation.policy_pack:
-        lines.append(f"**Policy Pack:** {explanation.policy_pack}")
-    lines.extend(["", explanation.summary, ""])
-    if explanation.items:
-        lines.append("## Findings")
-        lines.append("")
-        for item in explanation.items:
-            lines.append(f"### {item.title}")
-            lines.append("")
-            lines.append(f"**Risk:** {item.risk}")
-            lines.append(f"**Category:** {item.category}")
-            lines.append(f"**Why it Matters:** {item.why_it_matters}")
-            if item.evidence:
-                lines.append(f"**Evidence:** {item.evidence}")
-            lines.append(f"**Recommendation:** {item.recommendation}")
-            if item.reviewer_hint:
-                lines.append(f"**Reviewer:** {item.reviewer_hint}")
-            lines.append("")
-    return "\n".join(lines)
-
-
-def _render_policy_explanation_text(explanation: object) -> str:
-    """Render policy explanation as text."""
-    lines = [
-        f"Decision: {explanation.decision}",
-        f"Max Risk: {explanation.max_risk}",
-        "",
-        explanation.summary,
-    ]
-    return "\n".join(lines)

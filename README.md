@@ -146,6 +146,60 @@ terraguard-agentshield risk diff change.diff \
   --fail-on high
 ```
 
+## AgentShield PR Guardian
+
+AgentShield PR Guardian turns runtime governance into a GitHub-native pull request check.
+
+It can:
+
+- Detect likely AI-agent-authored pull requests
+- Classify source and IaC risk from the PR diff
+- Explain why a change is blocked or requires approval
+- Publish reviewer-ready PR comments
+- Produce evidence artifacts for audit and compliance
+
+```bash
+git diff origin/main...HEAD > change.diff
+
+terraguard-agentshield pr guard \
+  --diff change.diff \
+  --policy-pack banking-regulated-ai \
+  --fail-on high \
+  --output-dir .terraguard/agentshield/pr-guardian
+```
+
+```bash
+terraguard-agentshield agent detect \
+  --repo . \
+  --branch "$GITHUB_HEAD_REF" \
+  --event-path "$GITHUB_EVENT_PATH" \
+  --format markdown
+```
+
+```bash
+terraguard-agentshield policy explain \
+  --risk agentshield-risk.json \
+  --policy-pack banking-regulated-ai \
+  --format markdown
+```
+
+```mermaid
+flowchart LR
+    A[Pull Request] --> B[GitHub Actions]
+    B --> C[AgentShield PR Guardian]
+    C --> D[AI Agent Detector]
+    C --> E[Semantic Diff Risk Classifier]
+    C --> F[Policy Explain Mode]
+    C --> G[Evidence Writer]
+    D --> H[PR Governance Report]
+    E --> H
+    F --> H
+    G --> H
+    H --> I[GitHub PR Comment]
+    H --> J[Required Check Pass/Fail]
+    H --> K[Audit Artifacts]
+```
+
 Create and verify a signed evidence bundle:
 
 ```bash
@@ -333,6 +387,9 @@ More detail:
 - [Policy Test Harness](docs/policy-test-harness.md)
 - [Compliance Mappings](docs/compliance-mappings.md)
 - [Generated Reports](docs/generated-reports.md)
+- [PR Guardian](docs/pr-guardian.md)
+- [AI Agent Detector](docs/ai-agent-detector.md)
+- [Policy Explain Mode](docs/policy-explain-mode.md)
 - [Claude Code Hooks](docs/claude-code-hooks.md)
 - [Policy Signing](docs/policy-signing.md)
 - [Policy Inheritance](docs/policy-inheritance.md)
@@ -379,6 +436,9 @@ Implemented:
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Generated PR/check reports that combine validation, decision summaries, approval routing, and compliance mappings
+- PR Guardian for GitHub pull-request risk governance
+- AI Agent Detector for deterministic AI-agent authorship signals
+- Policy Explain Mode for reviewer-ready explanations and remediation
 - Typer CLI
 - Unit tests for runtime, policy registry, and integrations
 

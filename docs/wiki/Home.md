@@ -33,6 +33,9 @@ Implemented:
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Generated governance reports for PR comments and protected-branch checks
+- PR Guardian for GitHub pull-request risk governance
+- AI Agent Detector for deterministic agent-authorship signals
+- Policy Explain Mode for reviewer-ready remediation guidance
 - CLI commands for sessions, execution checks, file checks, MCP checks, and attestation
 
 ## Roadmap Snapshot
@@ -59,6 +62,9 @@ Implemented:
 - [Policy Test Harness](Policy-Test-Harness)
 - [Compliance Mappings](Compliance-Mappings)
 - [Generated Reports](Generated-Reports)
+- [PR Guardian](PR-Guardian)
+- [AI Agent Detector](AI-Agent-Detector)
+- [Policy Explain Mode](Policy-Explain-Mode)
 - [Claude Code Hooks](Claude-Code-Hooks)
 - [Policy Signing](Policy-Signing)
 - [Policy Inheritance](Policy-Inheritance)

@@ -33,6 +33,9 @@ Implemented:
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Generated governance reports for PR comments and protected-branch checks
+- PR Guardian for pull-request risk governance
+- AI Agent Detector for deterministic AI-agent involvement signals
+- Policy Explain Mode for reviewer-ready explanations
 - Packaged policy data for PyPI-style installs
 - CLI commands for start, exec, file checks, MCP checks, and attestation
 - Tests and lint coverage for current behavior
@@ -49,14 +52,17 @@ Not yet implemented:
 terraguard-agentshield/
 +-- src/terraguard_agentshield/
 |   +-- agent.py
+|   +-- agent_detector.py
 |   +-- approval.py
 |   +-- api.py
 |   +-- audit.py
 |   +-- cli.py
 |   +-- compliance.py
+|   +-- explain.py
 |   +-- integrations.py
 |   +-- policy_testing.py
 |   +-- policy_registry.py
+|   +-- pr_guardian.py
 |   +-- reports.py
 |   +-- runtime.py
 |   +-- summary.py
@@ -93,6 +99,7 @@ terraguard-agentshield agent start --tool claude-code --repo .
 terraguard-agentshield agent exec "terraform plan"
 terraguard-agentshield agent check-file .env --mode read
 terraguard-agentshield agent check-mcp github-enterprise --capability read_repo
+terraguard-agentshield agent detect --branch copilot/demo --format markdown
 terraguard-agentshield hooks claude --policy-pack banking-regulated-ai
 terraguard-agentshield agent attest <session-id> --format markdown
 terraguard-agentshield evidence send-webhook <session-id> --url https://security.example.com/events
@@ -109,6 +116,8 @@ terraguard-agentshield evidence verify-bundle agentshield-evidence-bundle.json -
 terraguard-agentshield evidence summary --audit-dir .terraguard/audit
 terraguard-agentshield approval route --audit-dir .terraguard/audit
 terraguard-agentshield policy test examples/policy-tests/ai-agent-baseline.yaml
+terraguard-agentshield policy explain --risk agentshield-risk.json
+terraguard-agentshield pr guard --diff change.diff --fail-on high
 terraguard-agentshield compliance map --audit-dir .terraguard/audit
 terraguard-agentshield report generate --audit-dir .terraguard/audit --validation agentshield-validation.json
 terraguard-agentshield report publish-github-comment --audit-dir .terraguard/audit
@@ -130,7 +139,7 @@ Current local verification:
 
 ```text
 ruff check . -> pass
-pytest -q -> 86 passed
+pytest -q -> pass
 ```
 
 ## Recommended Next Implementation

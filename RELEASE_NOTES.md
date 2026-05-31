@@ -35,6 +35,9 @@ Core governance:
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Generated governance reports for PR comments and protected-branch checks
+- PR Guardian for GitHub pull-request risk governance
+- AI Agent Detector for deterministic AI-agent involvement signals
+- Policy Explain Mode for reviewer-ready explanations
 - Packaged built-in policy packs for installed usage
 
 Policy packs:
@@ -50,6 +53,7 @@ CLI:
 - `terraguard-agentshield agent exec`
 - `terraguard-agentshield agent check-file`
 - `terraguard-agentshield agent check-mcp`
+- `terraguard-agentshield agent detect`
 - `terraguard-agentshield agent attest`
 - `terraguard-agentshield hooks claude`
 - `terraguard-agentshield evidence send-webhook`
@@ -62,6 +66,8 @@ CLI:
 - `terraguard-agentshield evidence summary`
 - `terraguard-agentshield approval route`
 - `terraguard-agentshield policy test`
+- `terraguard-agentshield policy explain`
+- `terraguard-agentshield pr guard`
 - `terraguard-agentshield compliance list`
 - `terraguard-agentshield compliance map`
 - `terraguard-agentshield report generate`

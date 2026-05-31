@@ -38,12 +38,18 @@ Status: **Implemented in this repo**
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Generated PR/check summaries that combine validation, routing, and compliance evidence
+- PR Guardian for GitHub pull-request risk governance
+- AI Agent Detector for deterministic AI-agent involvement signals
+- Policy Explain Mode for reviewer-ready explanations
 - CLI commands:
   - `agent start`
   - `agent exec`
   - `agent check-file`
   - `agent check-mcp`
   - `agent attest`
+  - `agent detect`
+  - `policy explain`
+  - `pr guard`
   - `report generate`
   - `report publish-github-comment`
 - Test coverage for runtime and evidence behavior

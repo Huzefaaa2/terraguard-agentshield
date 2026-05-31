@@ -25,6 +25,9 @@ Implemented:
 - Policy test harness for command, file, Git, and MCP decisions
 - Compliance mappings for SOC 2, ISO 27001, PCI DSS, NIST SSDF, and internal AI governance
 - Generated PR/check summaries that combine validation, routing, and compliance evidence
+- PR Guardian for GitHub pull-request risk governance
+- AI Agent Detector for deterministic AI-agent involvement signals
+- Policy Explain Mode for reviewer-ready explanations
 - JSON session audit
 - PR markdown attestation
 - CLI workflow

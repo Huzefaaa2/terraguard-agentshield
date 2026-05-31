@@ -1,11 +1,3 @@
-"""
-Policy Explain Mode — Deterministic explanations of AgentShield risk findings.
-
-Explains why AgentShield blocked, warned, or required approval for a change,
-mapping risk categories to business context, evidence, recommendations, and
-reviewer hints. No external services, no LLM calls.
-"""
-
 from __future__ import annotations
 
 import json
@@ -13,241 +5,281 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from terraguard_agentshield.risk import RISK_ORDER, RiskFinding, RiskSummary
+
+
+CATEGORY_GUIDANCE: dict[str, dict[str, str]] = {
+    "secrets": {
+        "why": "Credential material may enter source control or AI-agent context.",
+        "recommendation": "Move the secret to an approved secret manager and remove it from the diff and history.",
+    },
+    "public-exposure": {
+        "why": "Internet-exposed ingress can expose systems or data to untrusted networks.",
+        "recommendation": "Restrict CIDR ranges, require security approval, and document the business need.",
+    },
+    "privilege-expansion": {
+        "why": "Wildcard or administrative permissions violate least-privilege controls.",
+        "recommendation": "Replace wildcard or admin actions with exact actions and resource scope.",
+    },
+    "encryption": {
+        "why": "Data protection controls are weakened or removed.",
+        "recommendation": "Keep encryption enabled and use approved KMS or platform-managed keys.",
+    },
+    "logging": {
+        "why": "Auditability and incident response visibility may be reduced.",
+        "recommendation": "Keep audit logging enabled or document approved compensating controls.",
+    },
+    "tls": {
+        "why": "Disabling certificate verification enables man-in-the-middle risk.",
+        "recommendation": "Keep verification enabled and use trusted certificates.",
+    },
+    "crypto": {
+        "why": "Weak cryptographic primitives can break confidentiality or integrity.",
+        "recommendation": "Use approved modern algorithms.",
+    },
+    "sensitive-code": {
+        "why": "Authentication, payment, identity, token, or security code needs independent review.",
+        "recommendation": "Require a reviewer familiar with that control area.",
+    },
+}
+
+REVIEWER_HINTS = {
+    "identity-access": "Security/IAM approver",
+    "network-security": "Network/security approver",
+    "data-protection": "Security/data protection approver",
+    "audit-monitoring": "SRE/security monitoring approver",
+    "application-security": "AppSec approver",
+}
+
 
 @dataclass(frozen=True)
 class PolicyExplanationItem:
-    """Explanation for a single risk finding."""
-
     risk: str
-    """Risk level: 'critical', 'high', 'medium', 'low'."""
     category: str
-    """Risk category: 'secrets', 'privilege-expansion', 'public-exposure', etc."""
     title: str
-    """Human-readable title of the finding."""
     why_it_matters: str
-    """Business/security context explaining why this risk matters."""
     evidence: str | None
-    """Extracted evidence from the diff (code snippet, pattern match, etc.)."""
     file: str | None
-    """File path where finding was detected."""
     line: int | None
-    """Line number in file."""
     recommendation: str
-    """Actionable remediation steps."""
     control_family: str | None
-    """Control family: 'identity-access', 'network-security', 'data-protection', etc."""
     reviewer_hint: str | None
-    """Reviewer group or expertise needed."""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "risk": self.risk,
+            "category": self.category,
+            "title": self.title,
+            "why_it_matters": self.why_it_matters,
+            "evidence": self.evidence,
+            "file": self.file,
+            "line": self.line,
+            "recommendation": self.recommendation,
+            "control_family": self.control_family,
+            "reviewer_hint": self.reviewer_hint,
+        }
 
 
 @dataclass(frozen=True)
 class PolicyExplanation:
-    """Overall policy explanation for a PR or risk summary."""
-
     decision: str
-    """Decision: 'pass', 'warn', 'require_approval', 'block'."""
     max_risk: str
-    """Maximum risk level found."""
     policy_pack: str | None
-    """Policy pack ID used for evaluation."""
     summary: str
-    """Concise human-readable explanation."""
     items: list[PolicyExplanationItem] = field(default_factory=list)
-    """Per-finding explanations."""
-
-    def to_json(self) -> str:
-        """Serialize to JSON string."""
-        return json.dumps(self.to_dict(), indent=2)
+    fail_on: str = "high"
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to dictionary."""
         return {
             "decision": self.decision,
             "max_risk": self.max_risk,
             "policy_pack": self.policy_pack,
+            "fail_on": self.fail_on,
             "summary": self.summary,
-            "items": [
-                {
-                    "risk": item.risk,
-                    "category": item.category,
-                    "title": item.title,
-                    "why_it_matters": item.why_it_matters,
-                    "evidence": item.evidence,
-                    "file": item.file,
-                    "line": item.line,
-                    "recommendation": item.recommendation,
-                    "control_family": item.control_family,
-                    "reviewer_hint": item.reviewer_hint,
-                }
-                for item in self.items
-            ],
+            "items": [item.to_dict() for item in self.items],
         }
 
-
-# Category-to-explanation mappings
-_CATEGORY_EXPLANATIONS = {
-    "secrets": {
-        "why": "Credential material (API keys, tokens, passwords) may enter source control or AI context.",
-        "recommendation": "Move secret to approved secret manager and remove from diff/history.",
-        "control_family": "data-protection",
-        "reviewer_hint": "Security/data protection approver",
-    },
-    "public-exposure": {
-        "why": "Internet-exposed ingress (0.0.0.0/0, ::/0) can expose systems or data to unauthorized access.",
-        "recommendation": "Restrict CIDR ranges to specific IPs, document business need, and request security approval.",
-        "control_family": "network-security",
-        "reviewer_hint": "Network/security approver",
-    },
-    "privilege-expansion": {
-        "why": "Wildcard or admin permissions violate least-privilege controls and expand attack surface.",
-        "recommendation": "Replace wildcard/admin actions with exact least-privilege permissions and scoped resources.",
-        "control_family": "identity-access",
-        "reviewer_hint": "Security/IAM approver",
-    },
-    "encryption": {
-        "why": "Disabling or weakening data protection controls reduces confidentiality and integrity.",
-        "recommendation": "Keep encryption enabled, use approved KMS/platform keys, and document any exceptions.",
-        "control_family": "data-protection",
-        "reviewer_hint": "Security/data protection approver",
-    },
-    "logging": {
-        "why": "Disabling audit logging reduces visibility for incident response and compliance audits.",
-        "recommendation": "Keep audit logging enabled or document compensating controls for monitoring.",
-        "control_family": "audit-monitoring",
-        "reviewer_hint": "SRE/security monitoring approver",
-    },
-    "tls": {
-        "why": "Disabling certificate verification enables MITM attacks and credential theft.",
-        "recommendation": "Keep verification enabled and use trusted, approved certificates.",
-        "control_family": "network-security",
-        "reviewer_hint": "Network/security approver",
-    },
-    "crypto": {
-        "why": "Weak cryptographic primitives (MD5, DES, RC4) can break confidentiality and integrity.",
-        "recommendation": "Use modern, NIST-approved cryptographic algorithms (SHA-256, AES-256, etc.).",
-        "control_family": "data-protection",
-        "reviewer_hint": "Security/data protection approver",
-    },
-    "sensitive-code": {
-        "why": "Authentication, payment, identity, token, or security-related code needs independent review.",
-        "recommendation": "Require reviewer familiar with that control area; document security rationale.",
-        "control_family": "application-security",
-        "reviewer_hint": "AppSec or subject-matter expert approver",
-    },
-}
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), indent=2)
 
 
 def explain_risk_summary(
-    risk_summary: dict[str, Any],
+    risk_summary: RiskSummary | dict[str, Any],
     policy_pack: str | None = None,
     fail_on: str = "high",
 ) -> PolicyExplanation:
-    """
-    Explain a risk summary into business-ready guidance.
-
-    Args:
-        risk_summary: Risk summary dict from SemanticRiskClassifier (typically from JSON).
-        policy_pack: Policy pack ID for context.
-        fail_on: Failure threshold: 'low', 'medium', 'high', 'critical'.
-
-    Returns:
-        PolicyExplanation with decision, max_risk, summary, and per-finding explanations.
-    """
-    if not isinstance(risk_summary, dict):
-        risk_summary = {}
-
-    findings = risk_summary.get("findings", [])
-    max_risk = risk_summary.get("max_risk", "none")
-
-    # Determine decision
-    risk_hierarchy = {"critical": 4, "high": 3, "medium": 2, "low": 1, "none": 0}
-    fail_on_level = risk_hierarchy.get(fail_on, 3)
-    max_risk_level = risk_hierarchy.get(max_risk, 0)
-
-    if max_risk_level >= fail_on_level:
-        decision = "require_approval"
-    elif max_risk == "medium":
-        decision = "warn"
-    elif max_risk == "low":
-        decision = "warn"
-    else:
-        decision = "pass"
-
-    # Generate per-finding explanations
-    items: list[PolicyExplanationItem] = []
-    for finding in findings:
-        if not isinstance(finding, dict):
-            continue
-
-        category = finding.get("category", "unknown")
-        risk_level = finding.get("risk", "medium")
-        evidence_line = finding.get("evidence", "")
-        file_name = finding.get("file")
-        line_num = finding.get("line")
-
-        # Get explanation template for category
-        template = _CATEGORY_EXPLANATIONS.get(category, {})
-        why = template.get("why", "Security risk detected in code.")
-        rec = template.get("recommendation", "Review and remediate this finding.")
-        family = template.get("control_family", "application-security")
-        reviewer = template.get("reviewer_hint", "Platform/security reviewer")
-
-        # Build title
-        title = f"{category.replace('-', ' ').title()}"
-
-        item = PolicyExplanationItem(
-            risk=risk_level,
-            category=category,
-            title=title,
-            why_it_matters=why,
-            evidence=evidence_line if evidence_line else None,
-            file=file_name,
-            line=line_num,
-            recommendation=rec,
-            control_family=family,
-            reviewer_hint=reviewer,
-        )
-        items.append(item)
-
-    # Generate summary
-    num_findings = len(items)
-    if num_findings == 0:
-        summary_text = "No high-risk AgentShield findings were detected in this pull request."
-    elif decision == "require_approval":
-        summary_text = (
-            f"AgentShield requires approval because this change introduces "
-            f"{num_findings} finding(s) with {max_risk}-risk security implications."
-        )
-    elif decision == "warn":
-        summary_text = (
-            f"AgentShield detected {num_findings} finding(s) with {max_risk}-risk implications. "
-            "Please review before merge."
-        )
-    else:
-        summary_text = "AgentShield risk assessment: pass."
-
+    summary = _coerce_summary(risk_summary)
+    decision = _explain_decision(summary, fail_on)
+    items = [_explain_finding(finding) for finding in summary.findings]
     return PolicyExplanation(
         decision=decision,
-        max_risk=max_risk,
+        max_risk=summary.max_risk,
         policy_pack=policy_pack,
-        summary=summary_text,
+        summary=_summary_text(summary, decision, fail_on),
         items=items,
+        fail_on=fail_on,
     )
 
 
 def explain_from_file(
     path: Path, policy_pack: str | None = None, fail_on: str = "high"
 ) -> PolicyExplanation:
-    """
-    Load a risk summary JSON file and produce an explanation.
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Risk summary JSON is not an object: {path}")
+    return explain_risk_summary(payload, policy_pack=policy_pack, fail_on=fail_on)
 
-    Args:
-        path: Path to risk JSON file (from risk diff command).
-        policy_pack: Policy pack ID for context.
-        fail_on: Failure threshold.
 
-    Returns:
-        PolicyExplanation.
-    """
-    risk_data = json.loads(path.read_text(encoding="utf-8"))
-    return explain_risk_summary(risk_data, policy_pack=policy_pack, fail_on=fail_on)
+def render_explanation_text(explanation: PolicyExplanation) -> str:
+    lines = [
+        f"Decision: {explanation.decision}",
+        f"Max risk: {explanation.max_risk}",
+        f"Policy pack: {explanation.policy_pack or 'not supplied'}",
+        f"Failure threshold: {explanation.fail_on}",
+        "",
+        explanation.summary,
+    ]
+    for index, item in enumerate(explanation.items, start=1):
+        location = _location(item.file, item.line)
+        lines.extend(
+            [
+                "",
+                f"Finding {index}: {item.title}",
+                f"Risk: {item.risk}",
+                f"Category: {item.category}",
+                f"Control family: {item.control_family or 'unknown'}",
+                f"Reviewer hint: {item.reviewer_hint or 'Platform/security reviewer'}",
+                f"Location: {location}",
+                f"Why: {item.why_it_matters}",
+                f"Recommendation: {item.recommendation}",
+            ]
+        )
+        if item.evidence:
+            lines.append(f"Evidence: {item.evidence}")
+    return "\n".join(lines)
+
+
+def render_explanation_markdown(explanation: PolicyExplanation) -> str:
+    lines = [
+        "# AgentShield Policy Explanation",
+        "",
+        f"**Decision:** {_display_decision(explanation.decision)}  ",
+        f"**Max risk:** {explanation.max_risk.title()}  ",
+        f"**Policy pack:** {explanation.policy_pack or 'not supplied'}  ",
+        f"**Failure threshold:** {explanation.fail_on}",
+        "",
+        explanation.summary,
+    ]
+    for index, item in enumerate(explanation.items, start=1):
+        lines.extend(
+            [
+                "",
+                f"## Finding {index}: {item.title}",
+                "",
+                f"**Risk:** {item.risk.title()}  ",
+                f"**Category:** {item.category}  ",
+                f"**Control family:** {item.control_family or 'unknown'}  ",
+                f"**Reviewer hint:** {item.reviewer_hint or 'Platform/security reviewer'}  ",
+                f"**Location:** {_location(item.file, item.line)}",
+                "",
+                "### Why this matters",
+                "",
+                item.why_it_matters,
+            ]
+        )
+        if item.evidence:
+            lines.extend(["", "### Evidence", "", "```text", item.evidence, "```"])
+        lines.extend(["", "### Recommended fix", "", item.recommendation])
+    if not explanation.items:
+        lines.extend(["", "No AgentShield risk findings were present in the supplied summary."])
+    return "\n".join(lines)
+
+
+def _coerce_summary(risk_summary: RiskSummary | dict[str, Any]) -> RiskSummary:
+    if isinstance(risk_summary, RiskSummary):
+        return risk_summary
+    findings: list[RiskFinding] = []
+    for payload in risk_summary.get("findings", []):
+        if not isinstance(payload, dict):
+            continue
+        findings.append(
+            RiskFinding(
+                risk=str(payload.get("risk") or "low"),
+                category=str(payload.get("category") or "unknown"),
+                title=str(payload.get("title") or "Risk finding"),
+                description=str(payload.get("description") or ""),
+                file=str(payload.get("file") or "unknown"),
+                line=payload.get("line") if isinstance(payload.get("line"), int) else None,
+                evidence=payload.get("evidence"),
+                recommendation=payload.get("recommendation"),
+                control_family=payload.get("control_family"),
+            )
+        )
+    return RiskSummary(findings=findings)
+
+
+def _explain_finding(finding: RiskFinding) -> PolicyExplanationItem:
+    guidance = CATEGORY_GUIDANCE.get(
+        finding.category,
+        {
+            "why": "The change touches a control area that needs security review.",
+            "recommendation": "Request platform or security review and document the intended behavior.",
+        },
+    )
+    control_family = finding.control_family
+    return PolicyExplanationItem(
+        risk=finding.risk,
+        category=finding.category,
+        title=finding.title,
+        why_it_matters=guidance["why"],
+        evidence=finding.evidence,
+        file=finding.file,
+        line=finding.line,
+        recommendation=finding.recommendation or guidance["recommendation"],
+        control_family=control_family,
+        reviewer_hint=REVIEWER_HINTS.get(control_family or "", "Platform/security reviewer"),
+    )
+
+
+def _explain_decision(summary: RiskSummary, fail_on: str) -> str:
+    if not summary.findings:
+        return "pass"
+    threshold = RISK_ORDER.get(fail_on.lower())
+    if threshold is None:
+        raise ValueError(f"Unknown risk threshold: {fail_on}")
+    if summary.decision == "block":
+        return "block"
+    if RISK_ORDER[summary.max_risk] >= threshold:
+        return "require_approval"
+    return summary.decision
+
+
+def _summary_text(summary: RiskSummary, decision: str, fail_on: str) -> str:
+    if not summary.findings:
+        return "AgentShield did not find policy-relevant risk in the supplied summary."
+    if decision == "block":
+        return (
+            "AgentShield blocks this change because it introduces critical-risk "
+            "security-sensitive behavior."
+        )
+    if decision == "require_approval":
+        return (
+            "AgentShield requires approval because this change introduces "
+            f"{summary.max_risk}-risk behavior at or above the `{fail_on}` threshold."
+        )
+    if decision == "warn":
+        return (
+            "AgentShield warns because this change affects security-relevant controls "
+            "but is below the configured failure threshold."
+        )
+    return "AgentShield findings are below the configured failure threshold."
+
+
+def _location(file: str | None, line: int | None) -> str:
+    if not file:
+        return "unknown"
+    return f"{file}:{line}" if line is not None else file
+
+
+def _display_decision(decision: str) -> str:
+    return decision.replace("_", " ").title()

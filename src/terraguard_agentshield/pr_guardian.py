@@ -1,327 +1,267 @@
-"""
-PR Guardian — GitHub pull request governance orchestration.
-
-Combines AI Agent Detection, Semantic Risk Classification, and Policy Explanation
-into a single reviewer-ready governance report. Optionally publishes to GitHub PR.
-"""
-
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from terraguard_agentshield.agent_detector import detect_ai_agent_change
-from terraguard_agentshield.explain import explain_risk_summary
-from terraguard_agentshield.risk import SemanticRiskClassifier, should_fail_for_risk
+from terraguard_agentshield.agent_detector import (
+    detect_ai_agent_change,
+    render_detection_markdown,
+)
+from terraguard_agentshield.explain import (
+    PolicyExplanation,
+    explain_risk_summary,
+    render_explanation_markdown,
+)
+from terraguard_agentshield.integrations import GitHubPRCommentPublisher
+from terraguard_agentshield.risk import (
+    RiskSummary,
+    SemanticRiskClassifier,
+    should_fail_for_risk,
+)
+
+
+REPORT_JSON = "agentshield-pr-guardian.json"
+REPORT_MARKDOWN = "agentshield-pr-guardian.md"
+EXPLANATION_MARKDOWN = "agentshield-policy-explanation.md"
+PR_GUARDIAN_MARKER = "<!-- terraguard-agentshield-pr-guardian -->"
 
 
 @dataclass(frozen=True)
 class PRGuardianConfig:
-    """Configuration for PR Guardian execution."""
-
     diff_path: Path
-    """Path to unified diff file."""
     repo: str | None = None
-    """GitHub repository as owner/name."""
     pr_number: int | None = None
-    """Pull request number."""
     policy_pack: str | None = None
-    """Policy pack ID for risk and policy evaluation."""
     fail_on: str = "high"
-    """Failure threshold: 'low', 'medium', 'high', 'critical'."""
     audit_dir: Path = Path(".terraguard/audit")
-    """Audit directory for agent detection signals."""
     bundle_dir: Path = Path(".terraguard/agentshield/evidence")
-    """Evidence bundle directory."""
     output_dir: Path = Path(".terraguard/agentshield/pr-guardian")
-    """Output directory for reports."""
     publish_comment: bool = False
-    """Publish result to GitHub PR comment."""
     github_token: str | None = None
-    """GitHub API token."""
     github_api_url: str = "https://api.github.com"
-    """GitHub API base URL."""
     dry_run: bool = False
-    """Print output without publishing or failing."""
+    event_path: Path | None = None
+    branch: str | None = None
+    pr_title: str | None = None
+    pr_body: str | None = None
 
 
 @dataclass(frozen=True)
 class PRGuardianResult:
-    """Result of PR Guardian analysis."""
-
     decision: str
-    """Decision: 'pass', 'warn', 'require_approval', 'block'."""
     max_risk: str
-    """Maximum risk level: 'critical', 'high', 'medium', 'low', 'none'."""
     should_fail: bool
-    """Whether to exit with failure code."""
     ai_agent_detected: bool
-    """Whether AI agent is likely involved."""
     ai_agent_confidence: str
-    """AI agent confidence: 'high', 'medium', 'low', 'none'."""
     ai_agent_type: str | None
-    """Inferred AI agent type."""
     risk_summary: dict[str, Any]
-    """Risk classification summary."""
     agent_detection: dict[str, Any]
-    """Agent detection result."""
     explanation: dict[str, Any]
-    """Policy explanation."""
     markdown_report: str
-    """Markdown-formatted governance report."""
     json_report_path: str | None = None
-    """Path to JSON report if written."""
     markdown_report_path: str | None = None
-    """Path to Markdown report if written."""
     pr_comment_url: str | None = None
-    """GitHub PR comment URL if published."""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "decision": self.decision,
+            "max_risk": self.max_risk,
+            "should_fail": self.should_fail,
+            "ai_agent_detected": self.ai_agent_detected,
+            "ai_agent_confidence": self.ai_agent_confidence,
+            "ai_agent_type": self.ai_agent_type,
+            "risk_summary": self.risk_summary,
+            "agent_detection": self.agent_detection,
+            "explanation": self.explanation,
+            "markdown_report": self.markdown_report,
+            "json_report_path": self.json_report_path,
+            "markdown_report_path": self.markdown_report_path,
+            "pr_comment_url": self.pr_comment_url,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), indent=2)
 
 
 def run_pr_guardian(config: PRGuardianConfig) -> PRGuardianResult:
-    """
-    Execute PR Guardian: AI detection + risk classification + policy explanation.
-
-    Args:
-        config: PRGuardianConfig with all settings.
-
-    Returns:
-        PRGuardianResult with decision, risks, agent detection, and reports.
-    """
-    # 1. Read diff
     if not config.diff_path.exists():
         raise FileNotFoundError(f"Diff file not found: {config.diff_path}")
 
     diff_text = config.diff_path.read_text(encoding="utf-8")
-
-    # 2. Run semantic risk classifier
-    risk_classifier = SemanticRiskClassifier()
-    risk_summary = risk_classifier.classify_diff(diff_text)
-    risk_dict = risk_summary.to_dict()
-
-    # 3. Run AI agent detector
-    agent_result = detect_ai_agent_change(
+    risk_summary = SemanticRiskClassifier().classify_diff(diff_text)
+    should_fail = bool(risk_summary.findings) and should_fail_for_risk(
+        risk_summary, config.fail_on
+    )
+    detection = detect_ai_agent_change(
         repo=Path("."),
-        audit_dir=config.audit_dir if config.audit_dir.exists() else None,
+        branch=config.branch,
+        pr_title=config.pr_title,
+        pr_body=config.pr_body,
+        event_path=config.event_path,
+        audit_dir=config.audit_dir,
     )
-    agent_dict = agent_result.to_dict()
-
-    # 4. Run policy explain
-    explanation_result = explain_risk_summary(
-        risk_dict, policy_pack=config.policy_pack, fail_on=config.fail_on
-    )
-    explanation_dict = explanation_result.to_dict()
-
-    # 5. Determine decision and should_fail
-    max_risk = risk_summary.max_risk
-    try:
-        should_fail = should_fail_for_risk(risk_summary, config.fail_on)
-    except ValueError:
-        should_fail = False
-
-    decision = explanation_result.decision
-
-    # 6. Generate markdown report
-    markdown_report = _render_pr_guardian_markdown(
-        decision=decision,
-        max_risk=max_risk,
-        fail_on=config.fail_on,
+    explanation = explain_risk_summary(
+        risk_summary,
         policy_pack=config.policy_pack,
-        agent_result=agent_result,
-        risk_summary=risk_dict,
-        explanation=explanation_result,
+        fail_on=config.fail_on,
+    )
+    markdown_report = render_pr_guardian_markdown(
+        risk_summary=risk_summary,
+        explanation=explanation,
+        agent_detection_markdown=render_detection_markdown(detection),
+        policy_pack=config.policy_pack,
+        fail_on=config.fail_on,
     )
 
-    # 7. Write JSON and Markdown artifacts if output_dir provided
-    json_report_path = None
-    markdown_report_path = None
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+    markdown_path = config.output_dir / REPORT_MARKDOWN
+    explanation_path = config.output_dir / EXPLANATION_MARKDOWN
+    json_path = config.output_dir / REPORT_JSON
+    markdown_path.write_text(markdown_report + "\n", encoding="utf-8")
+    explanation_path.write_text(
+        render_explanation_markdown(explanation) + "\n", encoding="utf-8"
+    )
 
-    if config.output_dir:
-        config.output_dir.mkdir(parents=True, exist_ok=True)
-
-        # Write JSON report
-        json_report_path_obj = config.output_dir / "agentshield-pr-guardian.json"
-        json_payload = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "decision": decision,
-            "max_risk": max_risk,
-            "fail_on": config.fail_on,
-            "policy_pack": config.policy_pack,
-            "repository": config.repo,
-            "pr_number": config.pr_number,
-            "ai_agent_detected": agent_result.detected,
-            "ai_agent_confidence": agent_result.confidence,
-            "ai_agent_type": agent_result.agent_type,
-            "risk_summary": risk_dict,
-            "agent_detection": agent_dict,
-            "explanation": explanation_dict,
-        }
-        json_report_path_obj.write_text(json.dumps(json_payload, indent=2) + "\n")
-        json_report_path = str(json_report_path_obj)
-
-        # Write Markdown report
-        markdown_report_path_obj = config.output_dir / "agentshield-pr-guardian.md"
-        markdown_report_path_obj.write_text(markdown_report + "\n")
-        markdown_report_path = str(markdown_report_path_obj)
-
-    # 8. Publish GitHub comment if requested (and not dry-run)
     pr_comment_url = None
     if config.publish_comment and not config.dry_run:
-        from terraguard_agentshield.integrations import GitHubPRCommentPublisher
-
-        if not config.repo or config.pr_number is None or not config.github_token:
-            raise ValueError(
-                "GitHub publish requires --repo, --pr-number, and GitHub token"
-            )
-
+        if not config.repo:
+            raise ValueError("GitHub repository missing. Set --repo or GITHUB_REPOSITORY.")
+        if config.pr_number is None:
+            raise ValueError("Pull request number missing. Set --pr-number or GITHUB_EVENT_PATH.")
+        if not config.github_token:
+            raise ValueError("GitHub token missing. Set GITHUB_TOKEN or --github-token-env.")
         publisher = GitHubPRCommentPublisher(
             config.github_token,
             api_url=config.github_api_url,
-            marker="<!-- terraguard-agentshield-pr-guardian -->",
+            marker=PR_GUARDIAN_MARKER,
         )
-        result = publisher.publish(config.repo, config.pr_number, markdown_report)
-        if result.success:
-            pr_comment_url = result.comment_url
-        else:
-            raise RuntimeError(
-                f"Failed to publish GitHub PR comment: {result.error}"
-            )
+        publish_result = publisher.publish(config.repo, config.pr_number, markdown_report)
+        if not publish_result.success:
+            raise RuntimeError(f"GitHub PR comment publish failed: {publish_result.error}")
+        pr_comment_url = publish_result.comment_url
 
-    return PRGuardianResult(
-        decision=decision,
-        max_risk=max_risk,
+    result = PRGuardianResult(
+        decision=explanation.decision,
+        max_risk=risk_summary.max_risk,
         should_fail=should_fail,
-        ai_agent_detected=agent_result.detected,
-        ai_agent_confidence=agent_result.confidence,
-        ai_agent_type=agent_result.agent_type,
-        risk_summary=risk_dict,
-        agent_detection=agent_dict,
-        explanation=explanation_dict,
+        ai_agent_detected=detection.detected,
+        ai_agent_confidence=detection.confidence,
+        ai_agent_type=detection.agent_type,
+        risk_summary=risk_summary.to_dict(),
+        agent_detection=detection.to_dict(),
+        explanation=explanation.to_dict(),
         markdown_report=markdown_report,
-        json_report_path=json_report_path,
-        markdown_report_path=markdown_report_path,
+        json_report_path=str(json_path),
+        markdown_report_path=str(markdown_path),
         pr_comment_url=pr_comment_url,
     )
+    json_path.write_text(result.to_json() + "\n", encoding="utf-8")
+    return result
 
 
-def _render_pr_guardian_markdown(
-    decision: str,
-    max_risk: str,
-    fail_on: str,
-    policy_pack: str | None,
-    agent_result: Any,
-    risk_summary: dict[str, Any],
-    explanation: Any,
+def render_pr_guardian_markdown(
+    risk_summary: RiskSummary,
+    explanation: PolicyExplanation,
+    agent_detection_markdown: str,
+    policy_pack: str | None = None,
+    fail_on: str = "high",
 ) -> str:
-    """
-    Render PR Guardian result as a GitHub-ready Markdown report.
+    if not risk_summary.findings:
+        return "\n".join(
+            [
+                PR_GUARDIAN_MARKER,
+                "",
+                "# TerraGuard AgentShield PR Guardian",
+                "",
+                "**Decision:** Pass  ",
+                f"**Max risk:** {risk_summary.max_risk.title()}  ",
+                f"**Failure threshold:** {fail_on}  ",
+                f"**Policy pack:** {policy_pack or 'not supplied'}",
+                "",
+                "No high-risk AgentShield findings were detected in this pull request.",
+                "",
+                agent_detection_markdown,
+            ]
+        )
 
-    Args:
-        decision: Overall decision.
-        max_risk: Maximum risk level.
-        fail_on: Failure threshold.
-        policy_pack: Policy pack ID.
-        agent_result: Agent detection result object.
-        risk_summary: Risk summary dict.
-        explanation: PolicyExplanation object.
-
-    Returns:
-        Markdown-formatted report string.
-    """
     lines = [
-        "<!-- terraguard-agentshield-pr-guardian -->",
+        PR_GUARDIAN_MARKER,
         "",
         "# TerraGuard AgentShield PR Guardian",
         "",
-        f"**Decision:** {decision.replace('_', ' ').title()}",
-        f"**Max risk:** {max_risk}",
-        f"**Failure threshold:** {fail_on}",
+        f"**Decision:** {_display_decision(explanation.decision)}  ",
+        f"**Max risk:** {risk_summary.max_risk.title()}  ",
+        f"**Failure threshold:** {fail_on}  ",
+        f"**Policy pack:** {policy_pack or 'not supplied'}",
+        "",
+        agent_detection_markdown,
+        "",
+        "## Risk Summary",
+        "",
+        "| Risk | Count |",
+        "| --- | ---: |",
     ]
+    counts = risk_summary.to_dict().get("risk_counts", {})
+    for risk in ("critical", "high", "medium", "low"):
+        lines.append(f"| {risk.title()} | {counts.get(risk, 0)} |")
 
-    if policy_pack:
-        lines.append(f"**Policy pack:** {policy_pack}")
-
-    lines.append("")
-
-    # AI Agent Detection section
-    lines.append("## AI Agent Detection")
-    lines.append("")
-    lines.append(
-        f"**AI agent detected:** {'Yes' if agent_result.detected else 'No'}"
+    lines.extend(
+        [
+            "",
+            "## Findings",
+            "",
+            "| Risk | Category | File | Line | Why it matters |",
+            "| --- | --- | --- | ---: | --- |",
+        ]
     )
-    lines.append(f"**Confidence:** {agent_result.confidence.title()}")
-    if agent_result.agent_type:
-        lines.append(f"**Likely agent:** {agent_result.agent_type.replace('-', ' ').title()}")
-    lines.append("")
-
-    # Risk Summary section
-    findings = risk_summary.get("findings", [])
-    risk_counts = {}
-    for finding in findings:
-        risk_level = finding.get("risk", "medium")
-        risk_counts[risk_level] = risk_counts.get(risk_level, 0) + 1
-
-    lines.append("## Risk Summary")
-    lines.append("")
-    lines.append("| Risk | Count |")
-    lines.append("| --- | ---: |")
-    for level in ["critical", "high", "medium", "low"]:
-        count = risk_counts.get(level, 0)
-        lines.append(f"| {level.title()} | {count} |")
-    lines.append("")
-
-    # Findings table
-    if findings:
-        lines.append("## Findings")
-        lines.append("")
-        lines.append("| Risk | Category | File | Line | Why it matters |")
-        lines.append("| --- | --- | --- | ---: | --- |")
-        for finding in findings:
-            risk = finding.get("risk", "medium").title()
-            category = finding.get("category", "unknown").replace("-", " ").title()
-            file_name = finding.get("file", "—")
-            line_num = finding.get("line", "—")
-            evidence = finding.get("evidence", "")[:50] + "..." if len(finding.get("evidence", "")) > 50 else finding.get("evidence", "")
-            lines.append(
-                f"| {risk} | {category} | {file_name} | {line_num} | {evidence or '—'} |"
-            )
-        lines.append("")
-
-    # Policy Explanation section
-    lines.append("## Policy Explanation")
-    lines.append("")
-    lines.append(explanation.summary)
-    lines.append("")
-
-    # Required reviewers
-    reviewer_hints = set()
     for item in explanation.items:
-        if item.reviewer_hint:
-            reviewer_hints.add(item.reviewer_hint)
+        lines.append(
+            f"| {item.risk.title()} | {item.category} | `{item.file or 'unknown'}` | "
+            f"{item.line if item.line is not None else ''} | {item.why_it_matters} |"
+        )
 
-    if reviewer_hints:
-        lines.append("### Required reviewer groups")
-        lines.append("")
-        for hint in sorted(reviewer_hints):
-            lines.append(f"- {hint}")
-        lines.append("")
-
-    # Remediation
-    if findings:
-        lines.append("## Recommended remediation")
-        lines.append("")
-        lines.append("1. Review each finding above.")
-        lines.append("2. Apply recommended fixes.")
-        lines.append("3. Re-run AgentShield PR Guardian after remediation.")
-        lines.append("")
-
-    # Evidence artifacts
-    lines.append("## Evidence artifacts")
-    lines.append("")
-    lines.append("- `agentshield-pr-guardian.json`")
-    lines.append("- `agentshield-pr-guardian.md`")
-    lines.append("")
-
+    reviewer_groups = _unique(
+        item.reviewer_hint or "Platform/security reviewer" for item in explanation.items
+    )
+    recommendations = _unique(item.recommendation for item in explanation.items)
+    lines.extend(
+        [
+            "",
+            "## Policy Explanation",
+            "",
+            explanation.summary,
+            "",
+            "### Required reviewer groups",
+            "",
+        ]
+    )
+    lines.extend(f"- {reviewer}" for reviewer in reviewer_groups)
+    lines.extend(["", "## Recommended remediation", ""])
+    lines.extend(f"{index}. {text}" for index, text in enumerate(recommendations, start=1))
+    lines.extend(
+        [
+            "",
+            "## Evidence artifacts",
+            "",
+            f"- `{REPORT_JSON}`",
+            f"- `{REPORT_MARKDOWN}`",
+            f"- `{EXPLANATION_MARKDOWN}`",
+        ]
+    )
     return "\n".join(lines)
+
+
+def _unique(values: Any) -> list[str]:
+    seen: set[str] = set()
+    unique_values: list[str] = []
+    for value in values:
+        if value not in seen:
+            seen.add(value)
+            unique_values.append(value)
+    return unique_values
+
+
+def _display_decision(decision: str) -> str:
+    return decision.replace("_", " ").title()
